@@ -2,9 +2,9 @@
 
 一个围绕日常上网任务的浏览器解谜游戏：找官网、加兴趣群、买胶片、安装游戏平台、找网盘资料，以及购买游戏并准备加速器。玩家通过域名、发布者、群号、文件类型和表单行为识别陷阱。
 
-[Pages 入口](https://tyrantqiao.github.io/canYouCloseThat/) · [部署记录](https://github.com/tyrantqiao/canYouCloseThat/actions/workflows/pages.yml)
+[在线试玩](https://tyrantqiao.github.io/canYouCloseThat/) · [部署记录](https://github.com/tyrantqiao/canYouCloseThat/actions/workflows/pages.yml)
 
-当前部署工作流已成功。账户主站 tyrantqiao.github.io 配置了自定义域名 tyrantqiao.com，项目入口会继承并跳转到该域名；验收时目标路径返回 Vercel 404，需要修复主站 Pages 域名绑定或为本项目配置独立子域名后才能在线试玩。
+项目使用 GitHub 默认域名 tyrantqiao.github.io，不绑定自定义域名。
 
 ## 当前关卡
 

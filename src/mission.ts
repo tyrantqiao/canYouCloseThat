@@ -16,7 +16,7 @@ export class BrowserMission {
   get searchResults() { return resultsFor(this.query); }
   dangerElapsed = 0;
   dangerActive = false;
-  back() { const attacked = this.dangerActive; this.dangerActive = false; this.dangerElapsed = 0; this.ads = this.ads.filter(id => !id.startsWith('attack-')); if (attacked) this.ads = [...new Set([...this.ads, 'installed'])]; this.page = this.searched ? 'results' : 'search'; }
+  back() { this.dangerActive = false; this.dangerElapsed = 0; this.ads = this.ads.filter(id => !id.startsWith('attack-')); this.page = this.searched ? 'results' : 'search'; }
   visitResult(id: string) {
     const site = this.searchResults.find(site => site.id === id);
     if (!site || site.page !== this.resultsPage) return false;
@@ -24,19 +24,13 @@ export class BrowserMission {
     this.page = site.kind === 'official' ? 'official' : 'fake';
     this.dangerActive = site.kind === 'phishing' || site.kind === 'malware';
     this.dangerElapsed = 0;
-    if (this.dangerActive) {
-      this.installed = true;
-      this.ads = [...new Set([...this.ads, 'attack-install', 'attack-account', 'attack-warning', 'attack-download'])];
-    }
     if (site.kind === 'official') this.ads = [...new Set([...this.ads, 'exit'])];
     return this.dangerActive;
   }
   tickDanger(delta: number) {
-    if (!this.dangerActive) return 0;
-    this.dangerElapsed += Math.max(0, delta);
-    const hits = Math.floor(this.dangerElapsed / 650);
-    this.dangerElapsed %= 650;
-    return hits;
+    // 浏览可疑页面只提供线索；扣分由明确的下载/支付动作触发。
+    void delta;
+    return 0;
   }
   bundleChecked = true;
   installed = false;

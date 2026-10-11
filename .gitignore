@@ -2,3 +2,9 @@ node_modules/
 dist/
 *.local
 .npm-cache/
+
+# Local browser verification screenshots
+/artifacts/drive-win7.png
+/artifacts/drive-xp.png
+/artifacts/level6-tasks.png
+/artifacts/level6-mobile.png

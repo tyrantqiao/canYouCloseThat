@@ -1,5 +1,7 @@
 # 《你能关掉吗？》游戏设计文档
 
+> 历史概念方案，保留首版立项思路。当前协作规则见 [AGENTS.md](./AGENTS.md)，游戏设计规约与资产索引见 [GAME_DESIGN_SPEC.md](./GAME_DESIGN_SPEC.md)，实际玩法见 [README.md](./README.md)。本文的十二关、清空全部弹窗、产品内“模拟网页”标识等早期设想，不表示当前实现或现行要求；冲突时使用当前规约。
+
 版本：v0.1 · 概念设计 / 首版立项  
 载体：浏览器网页游戏  
 部署目标：GitHub 仓库 + GitHub Pages  

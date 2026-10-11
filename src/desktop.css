@@ -1,0 +1,76 @@
+/* Local Windows-inspired shell. Only the drive level uses these selectors. */
+.drive-system-stage>.browser-bar{display:none}
+.drive-system-stage .website{background:#075488}
+.drive-scene{font:12px/1.5 'Segoe UI','Microsoft YaHei',sans-serif}
+.drive-scene>main{position:relative;min-height:720px;padding:22px 18px 60px;background:#075488 url('./assets/desktop/wallpaper-7.svg') center/cover;isolation:isolate}
+.drive-desktop{min-height:635px;position:relative}
+.drive-shortcuts{display:grid;grid-template-columns:repeat(2,94px);grid-auto-rows:110px;gap:8px;align-content:start;width:max-content}
+.drive-shortcut{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:4px;background:transparent!important;border:1px solid transparent!important;border-radius:3px!important;color:white!important;text-shadow:1px 1px 2px #001e3f;margin:0!important;padding:6px 2px!important;min-height:100px!important;width:94px}
+.drive-shortcut:hover,.drive-shortcut:focus-visible{background:#d6efff30!important;border-color:#d6efff80!important}
+.drive-shortcut b{font-weight:normal;font-size:12px;line-height:1.4}
+.drive-shortcut small{font-size:10px;color:#e7f4ff;line-height:1.4}
+.drive-app-icon{display:inline-block;flex-shrink:0;width:46px;height:46px;background:url('./assets/desktop/cloud-drive.svg') center/contain no-repeat;filter:drop-shadow(1px 2px 2px #00264c55);position:relative}
+.drive-app-icon::after{content:'↗';position:absolute;bottom:0;left:0;font:10px/12px Arial;width:12px;height:12px;color:#163a77;background:white;border:1px solid #869cb3;text-shadow:none}
+.drive-icon-speed{filter:hue-rotate(155deg)}.drive-icon-cloud{filter:hue-rotate(25deg)}.drive-icon-vip{filter:hue-rotate(190deg)}.drive-icon-box{filter:hue-rotate(70deg)}.drive-icon-disk{filter:hue-rotate(290deg)}.drive-icon-helper{filter:grayscale(.5)}
+.drive-memo{position:absolute;right:10px;top:18px;width:min(290px,42%);padding:0 18px 16px;background:linear-gradient(#fff1a1,#fff7c9);color:#3a3929;box-shadow:3px 5px 12px #00244855;transform:rotate(1deg);font:13px/1.8 'Microsoft YaHei',sans-serif}
+.drive-memo-title{margin:0 -18px 12px;padding:6px 12px;background:#eddb77;border-bottom:1px solid #ddce83;font-size:11px;color:#74672f}
+.drive-memo>b{font-size:13px}.drive-memo p{font-size:12px!important;overflow-wrap:anywhere}
+.drive-personalize{position:absolute;right:10px;bottom:24px;color:#e5f6ff;font:11px sans-serif;display:flex;gap:4px;align-items:center;flex-wrap:wrap}
+.drive-personalize button{font:11px sans-serif;min-height:32px;padding:5px 9px;margin:0;background:#164d7880;border-color:#ffffff55;color:white}
+.drive-personalize button[aria-pressed=true]{background:#e5f6ff;color:#22456a}
+.drive-taskbar{position:absolute;bottom:0;left:0;right:0;height:48px;display:flex;align-items:center;gap:8px;padding:3px 8px;background:linear-gradient(#9ac8e455,#163e68dd 45%,#10355fe8);border-top:1px solid #d8efff99;box-shadow:0 -1px 4px #002d60;z-index:5;color:white;backdrop-filter:blur(10px)}
+.drive-scene .drive-start{display:flex;align-items:center;justify-content:center;flex-shrink:0;width:42px;height:42px;min-height:42px;padding:0;margin:0;border:1px solid #a9e6ff;border-radius:50%;background:radial-gradient(circle at 45% 25%,#81cef5,#146199 55%,#05386b);box-shadow:0 0 5px #96dcff88;color:#fff}
+.drive-start>span:last-child{display:none}.drive-start-mark{font:27px Georgia;text-shadow:0 0 4px #fff}
+.drive-task-buttons{display:flex;gap:5px;min-width:0;flex:1;overflow-x:auto;scrollbar-width:thin}
+.drive-task-buttons button{display:flex;align-items:center;gap:7px;flex:0 0 132px;max-width:170px;margin:0;padding:3px 8px;min-height:39px;border:1px solid #bde0ff70;background:linear-gradient(#b5d8ed50,#4c7da250);box-shadow:inset 0 0 1px white;color:white;font:11px 'Segoe UI','Microsoft YaHei',sans-serif;text-align:left}
+.drive-task-buttons button[aria-pressed=true]{background:linear-gradient(#edfaff90,#5895cdaa);border-color:#edfbff}
+.drive-task-buttons .drive-app-icon{width:27px;height:27px}.drive-task-buttons .drive-app-icon::after,.bear-title .drive-app-icon::after,.drive-start-menu .drive-app-icon::after{display:none}
+.drive-tray{display:flex;align-items:center;gap:9px;padding:0 5px;font:12px sans-serif;flex-shrink:0}.drive-tray time{text-align:center;font-size:11px}.drive-tray small{display:block;font-size:10px;margin-top:3px}
+.drive-window{position:absolute;left:clamp(125px,20%,205px);right:24px;top:105px;max-width:850px;margin:0;padding:6px;border:1px solid #d1ecff;background:linear-gradient(135deg,#c9e9ffb3,#6eacd6bb);border-radius:7px;box-shadow:0 8px 26px #00234288,inset 0 0 0 1px #376b94;z-index:2}
+.drive-window .bear-title{height:34px;padding:0 0 5px 4px;background:none;border:0;font:12px 'Segoe UI','Microsoft YaHei',sans-serif;color:#102e47}
+.drive-window .bear-title b{display:flex;align-items:center;gap:7px;font:12px 'Segoe UI','Microsoft YaHei',sans-serif;text-shadow:0 0 5px white}.bear-title .drive-app-icon{width:20px;height:20px}
+.drive-window .bear-title>div{display:flex;align-self:flex-start;margin-top:-6px}
+.drive-window .bear-title button{width:34px;height:28px;min-height:28px!important;border:1px solid #5c86a7;background:linear-gradient(#e6f4fa,#7da6c8);color:#173d5e;border-radius:0;margin:0!important;box-shadow:inset 0 0 2px white;font:18px sans-serif!important}
+.drive-window .bear-title button[data-action=drive-close]{width:48px;border-radius:0 0 4px 0;background:linear-gradient(#edb8aa,#b7442d);color:white;border-color:#9f4a39}
+.drive-window .bear-title button[data-action=drive-close]:hover{background:#e85432}
+.drive-identity{padding:8px 12px;border:1px solid #7a9eb9;border-bottom:0;background:linear-gradient(#fff,#e7eff6);font:11px/1.7 sans-serif;overflow-wrap:anywhere}
+.drive-window .bear-window-body{background:#f7f9fc;border:1px solid #7a9eb9;border-top:1px solid #d5dfe7;max-height:440px;overflow:auto;padding:18px;font:12px 'Segoe UI','Microsoft YaHei',sans-serif}
+.drive-window h2{font-size:20px!important;color:#20578a;margin:8px 0 15px!important}.drive-window h3{font-size:14px}.drive-window p{font-size:12px!important}
+.drive-window button{font:12px 'Segoe UI','Microsoft YaHei',sans-serif;min-height:36px;background:linear-gradient(#fff,#e4e9ee);border-color:#8e9fae;color:#243d51}
+.drive-window input{font:14px sans-serif;min-height:36px}.drive-window form{padding:14px;margin:12px 0}
+.drive-window .task-results{gap:8px}.drive-window .task-results article{padding:12px}.drive-window .download-options{gap:10px}
+.drive-maximized{top:8px;left:8px;right:8px;max-width:none}.drive-maximized .bear-window-body{max-height:540px}
+.drive-start-menu{position:absolute;bottom:48px;left:8px;z-index:6;width:270px;max-width:calc(100% - 16px);padding:8px;background:linear-gradient(90deg,#f8fbff 70%,#c6dcec 70%);border:1px solid #b8dbf1;border-radius:6px 6px 0 0;box-shadow:0 0 15px #00203e88}
+.drive-start-menu header{padding:8px 12px;color:#234866;font-weight:bold}.drive-start-menu button{display:flex;align-items:center;gap:10px;width:100%;text-align:left;margin:0;border:1px solid transparent;background:transparent;font:12px sans-serif;padding:4px 8px;min-height:40px}.drive-start-menu button:hover{background:#dcedff;border-color:#aac9e8}.drive-start-menu .drive-app-icon{width:28px;height:28px}.drive-start-menu footer{padding:8px;color:#52728b;font:11px sans-serif}
+/* Luna uses the same controls and state; only the shell styling changes. */
+.drive-theme-xp>main{background-image:url('./assets/desktop/wallpaper-xp.svg')}
+.drive-theme-xp .drive-taskbar{background:linear-gradient(#418df2,#245bdb 18%,#2354bf 90%,#1944a2);border-top-color:#74b2ff;backdrop-filter:none}
+.drive-theme-xp .drive-start{width:82px;border-radius:0 13px 13px 0;border-color:#2d7130;background:linear-gradient(#73b75e,#348231 50%,#3b9637);gap:5px;font-style:italic;font-weight:bold}.drive-theme-xp .drive-start>span:last-child{display:inline}.drive-theme-xp .drive-start-mark{font-size:23px}
+.drive-theme-xp .drive-task-buttons button{background:#397ce4;border-color:#6a9df2;box-shadow:inset 1px 1px 2px #99bdff}.drive-theme-xp .drive-task-buttons button[aria-pressed=true]{background:#1846a2;box-shadow:inset 1px 1px 3px #11377e}
+.drive-theme-xp .drive-window{padding:3px;background:#ece9d8;border:2px solid #1d59dc;border-radius:8px 8px 0 0;box-shadow:3px 6px 15px #12355466}
+.drive-theme-xp .bear-title{background:linear-gradient(#4597ff,#0862ea 20%,#0055db 80%,#0040aa);margin:-3px -3px 0;padding:4px 5px;height:34px}.drive-theme-xp .bear-title b{color:white;font-weight:bold;text-shadow:1px 1px #174282}.drive-theme-xp .bear-title>div{margin:0}.drive-theme-xp .bear-title button{border:1px solid white;border-radius:3px;margin-left:3px!important;background:linear-gradient(135deg,#90bbff,#1d60dc);color:white;width:27px}.drive-theme-xp .bear-title button[data-action=drive-close]{width:29px;background:linear-gradient(135deg,#efad91,#d33c1e);border-color:white;border-radius:3px}
+.drive-theme-xp .drive-identity{background:#ece9d8;border-color:#aca899}.drive-theme-xp .bear-window-body{border-color:#aca899;background:white}.drive-theme-xp .drive-tray{background:#1394e1;height:42px;border-left:1px solid #72c9ff;padding:0 8px}
+body.in-game .drive-system-stage .website{height:100%;min-height:0;overflow:hidden}
+body.in-game .drive-scene{height:100%;min-height:0}
+body.in-game .drive-scene>main{height:100%;min-height:0;padding:0}
+body.in-game .drive-desktop{position:absolute;inset:0 0 48px;min-height:0;padding:22px 18px;overflow:auto}
+body.in-game .drive-window{max-height:calc(100% - 175px);display:flex;flex-direction:column}
+body.in-game .drive-window .bear-title,body.in-game .drive-identity{flex-shrink:0}
+body.in-game .drive-window .bear-window-body{min-height:0;max-height:none;flex:1;overflow:auto}
+body.in-game .drive-maximized{max-height:calc(100% - 62px)}
+body.in-game .drive-system-stage .veil{inset:0}
+@media(max-width:650px){
+ .drive-scene>main{min-height:850px;padding:12px 10px 60px}.drive-desktop{min-height:780px}
+ .drive-shortcuts{grid-template-columns:repeat(3,82px);grid-auto-rows:105px;gap:4px}.drive-shortcut{width:82px}.drive-shortcut small{font-size:9px}
+ .drive-memo{top:340px;left:8px;right:auto;width:min(300px,calc(100% - 16px));transform:none}
+ .drive-personalize{left:8px;right:auto;bottom:24px}
+ .drive-window{left:8px;right:8px;top:65px}.drive-window .bear-window-body{max-height:580px;padding:12px}.drive-window .download-options{grid-template-columns:1fr}
+ .drive-task-buttons button{flex-basis:48px;padding:3px 9px}.drive-task-buttons button>span:last-child{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+ .drive-taskbar{gap:5px;padding:3px 5px}.drive-tray{gap:5px;padding:0;font-size:10px}.drive-tray>span{display:none}.drive-tray small{font-size:9px}
+ .drive-theme-xp .drive-start{width:65px;font-size:12px}.drive-theme-xp .drive-tray{padding:0 4px}
+ .drive-maximized{top:6px}.drive-maximized .bear-window-body{max-height:660px}
+ body.in-game .drive-desktop{padding:12px 10px}
+ body.in-game .drive-personalize{top:665px;bottom:auto;padding-bottom:20px}
+ body.in-game .drive-window{max-height:calc(100% - 125px)}
+ body.in-game .drive-maximized{max-height:calc(100% - 62px)}
+}

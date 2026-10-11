@@ -45,17 +45,17 @@ test('official is only on second page; promotion and games can be browsed withou
   mission.back(); assert.equal(mission.resultsPage, 2);
 });
 
-test('danger attacks continuously until escape; reset clears all attack state', () => {
+test('dangerous pages can be explored without installing or draining patience', () => {
   for (const id of ['fish', 'virus']) {
     const mission = new BrowserMission(); mission.search('星河浏览器');
     assert.equal(mission.visitResult(id), true);
-    assert.equal(mission.installed, true);
-    assert.equal(mission.ads.filter(id => id.startsWith('attack-')).length, 4);
-    assert.equal(mission.tickDanger(649), 0); assert.equal(mission.tickDanger(1), 1);
-    assert.equal(mission.tickDanger(1300), 2);
+    assert.equal(mission.installed, false);
+    assert.equal(mission.ads.filter(id => id.startsWith('attack-')).length, 0);
+    assert.equal(mission.tickDanger(649), 0); assert.equal(mission.tickDanger(1), 0);
+    assert.equal(mission.tickDanger(1300), 0);
     mission.back(); assert.equal(mission.tickDanger(10000), 0);
     assert.ok(!mission.ads.some(id => id.startsWith('attack-')));
-    assert.ok(mission.ads.includes('installed'));
+    assert.ok(!mission.ads.includes('installed'));
     mission.close('installed'); assert.equal(mission.installed, false);
     mission.reset(); assert.equal(mission.dangerActive, false);
     assert.equal(mission.selectedSite, null); assert.equal(mission.resultsPage, 1);

@@ -44,3 +44,13 @@ test('scenario render escapes searches, and fourth level is untimed with one mis
   const game = new GameSession(3); game.start(); game.tick(90000); assert.equal(game.status,'playing');
   assert.equal(game.remaining,1); game.close('main'); game.tick(800); assert.equal(game.status,'won');
 });
+
+test('bear desktop launches contacts and preserves group state across minimization', () => {
+  const m = new ChatMission();
+  assert.match(renderChat(m),/bear-taskbar/); assert.ok(!renderChat(m).includes('bear-contact-list'));
+  m.open(); assert.match(renderChat(m),/bear-contact-list/);
+  m.join('real'); m.answer('银盐'); m.talk(); m.minimized = true;
+  assert.ok(!renderChat(m).includes('bear-window-body'));
+  m.open(); assert.equal(m.page,'chat'); assert.equal(m.chatting,true); assert.ok(m.joined.has('real'));
+  m.reset(); assert.equal(m.opened,false); assert.equal(m.friendChat,false); assert.equal(m.unread,true);
+});

@@ -2,7 +2,7 @@ import './style.css';
 import './retro.css';
 import './viewport.css';
 import './results.css';
-import { ringPopupBell } from './sound';
+import { ringPopupBell, ringBearMessage } from './sound';
 import { GameSession, levels, parseSave } from './game';
 import { BrowserMission } from './mission';
 import { ChatMission, DriveMission, renderChat, renderDrive } from './scenarios';
@@ -153,7 +153,7 @@ app.addEventListener('click', event => {
     return;
   }
   const mistakesBefore = game.mistakes;
-  if (action === 'begin') { game.start(); lastTime = performance.now(); overlay(''); announceMissionAds(); }
+  if (action === 'begin') { if (game.level.id === 1 && popupSound) ringBearMessage(); game.start(); lastTime = performance.now(); overlay(''); announceMissionAds(); }
   if (action === 'pause') { game.pause(); if (game.status === 'paused') overlay('paused'); }
   if (action === 'resume') { game.resume(); lastTime = performance.now(); overlay(''); }
   if (action === 'hint') { toast(game.hint()); }
@@ -416,6 +416,12 @@ function drawScenario() {
   document.querySelector('#stage')!.classList.add('scenario-stage');
   document.querySelector('.address')!.textContent = game.level.id === 1 ? '某熊 / 兴趣群与聊天' : game.level.id === 10 ? '云朵网盘 / 分享资料' : '浏览器 / 游戏准备';
   document.querySelector('.website')!.innerHTML = game.level.id === 1 ? renderChat(chat) : game.level.id === 10 ? renderDrive(drive) : renderGaming(game.level.id === 4 ? steam : gaming);
+  document.querySelector('.browser-bar>span')!.textContent = game.level.id === 1 ? '北极熊桌面' : '冲浪浏览器';
+  const note = document.querySelector<HTMLElement>('.website .task-note');
+  let details = document.querySelector<HTMLElement>('#scenario-task');
+  if (!details) { details = document.createElement('div'); details.id = 'scenario-task'; details.className = 'sidebar-task'; document.querySelector('#game-details')!.append(details); }
+  if (note) { details.innerHTML = note.innerHTML; note.remove(); }
+  document.querySelector<HTMLElement>('.task-brief')!.hidden = true;
 }
 function finishScenario() {
   if (game?.status === 'playing' && (game.level.id === 1 ? chat.complete : game.level.id === 10 ? drive.complete : game.level.id === 4 ? steam.complete : gaming.complete)) {
@@ -426,9 +432,14 @@ function scenarioTrap(message: string) { game!.trap(message); feedback(message);
 function handleScenarioAction(action: string, target: HTMLElement) {
   if (action.startsWith('gaming-')) handleGamingAction(action, target);
   game!.clicks++;
+  if (action === 'chat-open') { chat.open(); if (chat.unread && popupSound) ringBearMessage(); }
+  if (action === 'chat-minimize') chat.minimized = true;
+  if (action === 'chat-contacts') { chat.contacts = true; chat.friendChat = false; }
+  if (action === 'chat-find') { chat.friendChat = false; chat.contacts = false; chat.page = 'groups'; chat.message = ''; }
+  if (action === 'chat-friend') { chat.friendChat = true; chat.unread = false; chat.contacts = false; chat.page = 'groups'; chat.message = '林林：找到阿光的胶片摄影群了！群号 73021680，入群问题读公告。店铺 film-club.example，买一卷晨光 200 就行。'; if (popupSound) ringBearMessage(); }
   if (action === 'chat-home') { chat.page = 'groups'; chat.message = ''; }
   if (action === 'chat-join') chat.join(target.dataset.id!);
-  if (action === 'chat-talk') chat.talk();
+  if (action === 'chat-talk') { chat.talk(); if (popupSound) ringBearMessage(); }
   if (action === 'chat-shop') chat.openShop();
   if (action === 'chat-back') { chat.page = 'chat'; chat.message = ''; }
   if (action === 'chat-checkout') chat.checkout = true;

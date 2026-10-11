@@ -27,3 +27,14 @@ export function ringPopupBell() {
     else play();
   } catch { /* Keep the game playable when browser audio is unavailable. */ }
 }
+
+// Classic cough notification, bundled locally; provenance accompanies the asset.
+let bearMessage: HTMLAudioElement | null = null;
+export function ringBearMessage() {
+  try {
+    bearMessage ??= new Audio(new URL('./assets/audio/qq-system-cough.mp3', import.meta.url).href);
+    bearMessage.volume = .48;
+    bearMessage.currentTime = 0;
+    void bearMessage.play().catch(() => {});
+  } catch { /* Keep the game playable when browser audio is unavailable. */ }
+}

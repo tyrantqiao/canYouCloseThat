@@ -1,0 +1,32 @@
+/* Result feedback is finite and never intercepts game controls. */
+.result-veil { container-type: size; isolation: isolate; }
+.result-veil .modal { position: relative; z-index: 1; animation: result-enter .45s ease-out both; }
+.result-won .modal { border-color: #82bd96; box-shadow: 0 12px 48px #276d3426; }
+.result-lost .modal { border-color: #d99a94; box-shadow: 0 12px 48px #a73b3226; }
+.result-emblem { width: 78px; height: 78px; margin: 0 auto 8px; border-radius: 50%; animation: result-pop .6s ease-out both; }
+.result-won .result-emblem { color: #278452; background: #e5f5e9; }
+.result-lost .result-emblem { color: #cf514b; background: #fce9e6; }
+.result-emblem svg { display: block; width: 100%; height: 100%; fill: none; stroke: currentColor; stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; }
+.result-ring { stroke-width: 3; stroke-dasharray: 214; animation: result-ring .6s ease-out both; }
+.result-mark { stroke-dasharray: 100; animation: result-draw .45s .3s ease-out both; }
+.result-label { font-size: 14px; font-weight: 800; margin-bottom: 12px; }
+.result-won .result-label { color: #278452; }
+.result-lost .result-label { color: #c3443e; }
+.result-lost .result-emblem { animation: result-pop .5s ease-out both, result-no .4s .5s ease-out; }
+.result-confetti { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 2; border-radius: inherit; }
+.result-confetti i { position: absolute; left: var(--origin); top: 78%; width: 8px; height: 13px; background: var(--color); border-radius: 2px; opacity: 0; animation: result-confetti 2.4s var(--delay) ease-out both; }
+.result-confetti i:nth-child(3n) { width: 9px; height: 9px; border-radius: 50%; }
+@keyframes result-enter { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes result-pop { 0% { transform: scale(.65); opacity: 0; } 65% { transform: scale(1.12); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+@keyframes result-ring { from { stroke-dashoffset: 214; } to { stroke-dashoffset: 0; } }
+@keyframes result-draw { from { stroke-dashoffset: 100; } to { stroke-dashoffset: 0; } }
+@keyframes result-no { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+@keyframes result-confetti {
+  0% { opacity: 0; transform: translate(0,0) rotate(0); }
+  8% { opacity: 1; }
+  45% { opacity: 1; transform: translate(calc(var(--travel) * .55),var(--rise)) rotate(calc(var(--spin) * .45)); }
+  100% { opacity: 0; transform: translate(var(--travel),35cqh) rotate(var(--spin)); }
+}
+.reduced-motion .result-confetti { display: none; }
+@media (prefers-reduced-motion: reduce) { .result-confetti { display: none; } }
+@media (max-height: 500px) { .result-emblem { width: 48px; height: 48px; margin-bottom: 4px; } .result-label { margin-bottom: 6px; font-size: 12px; } }

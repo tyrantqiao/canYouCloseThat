@@ -34,6 +34,17 @@ test('wrong order restarts the ad via guard without a mistake; explicit recovery
   stop(m,'ad'); m.tick(2000); assert.equal(m.ad,false); assert.equal(m.mistakes,1);
 });
 
+test('cleanup checklist keeps pending recovery visible and explains both restart sources', () => {
+  const m = new UninstallMission(); stop(m, 'ad'); m.tick(2000);
+  assert.match(m.message, /2346Guard.exe/); assert.equal(m.sourcesStopped, false);
+  stop(m, 'guard'); stop(m, 'ad', true);
+  assert.equal(m.guard, false); assert.equal(m.ad, false); assert.equal(m.sourcesStopped, false);
+  assert.match(renderUninstall(m), /○ 后台来源停止/);
+  m.tick(2000); assert.match(m.message, /保留了自动恢复任务/);
+  stop(m, 'ad'); assert.equal(m.sourcesStopped, true); assert.match(renderUninstall(m), /✓ 后台来源停止/);
+  assert.equal(m.complete, false); m.reset(); assert.equal(m.sourcesStopped, false);
+});
+
 test('modal gate prevents click-through, background actions and safe escape never commit', () => {
   const m = new UninstallMission(); click(m,'tasks'); click(m,'end');
   m.act('guard-continue'); assert.equal(m.dialog,'guard');

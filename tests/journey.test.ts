@@ -47,7 +47,10 @@ test('all six missions recover from wrong choices and finish their business goal
   assert.equal(gaming.complete, false); gaming.findAccelerator(); gaming.search('疾风加速器'); gaming.visit('real');
   gaming.download(false); gaming.tick(1500); gaming.openInstaller();
   if (gaming.install()) game.trap('推荐组件');
-  gaming.bundled = false; gaming.install(); gaming.tick(1500); finish(gaming.complete);
+  gaming.bundled = false; gaming.install(); gaming.tick(1500); assert.equal(gaming.complete, false);
+  gaming.openLibrary(); gaming.openAccelerator(); gaming.selectRoute('shop'); gaming.testRoute(); gaming.tick(1500);
+  assert.equal(gaming.routeReady, false); assert.equal(game.patience, 2);
+  gaming.selectRoute('east'); gaming.testRoute(); gaming.tick(1500); gaming.joinVoice(); finish(gaming.complete);
   assert.equal(game.next(), true); game.start();
   const uninstall = new UninstallMission();
   const act = (action: string, id = '') => { uninstall.tick(351); const reason = uninstall.act(action,id); if (reason) game.trap(reason); };

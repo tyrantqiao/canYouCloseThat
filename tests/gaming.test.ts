@@ -28,6 +28,9 @@ function ready(m: GamingMission) {
   m.search(m.target === 'steam' ? 'Steam' : '疾风加速器'); m.visit('real');
   assert.equal(m.download(false),false); m.tick(1500); m.openInstaller();
 }
+function joinFriends(m: GamingMission) {
+  m.openLibrary(); m.openAccelerator(); m.selectRoute('east'); m.testRoute(); m.tick(1500); m.joinVoice();
+}
 
 test('address entry checks hostnames and browser history restores searches without inventing results', () => {
   const m = new GamingMission('install'); m.openBrowser();
@@ -90,7 +93,8 @@ test('accelerator is gated by purchase and bundled components can be corrected',
   m.search('steam'); m.visit('real'); m.checkout(); m.pay('play2026','6392'); m.findAccelerator();
   assert.equal(m.target,'accelerator'); ready(m); assert.equal(m.bundled,true);
   assert.equal(m.install(),true); assert.equal(m.running,null); assert.equal(m.complete,false);
-  m.bundled=false; assert.equal(m.install(),false); m.tick(1500); assert.equal(m.complete,true);
+  m.bundled=false; assert.equal(m.install(),false); m.tick(1500); assert.equal(m.complete,false);
+  joinFriends(m); assert.equal(m.complete,true);
   m.reset(); assert.equal(m.purchased,false); assert.equal(m.accelerated,false); assert.equal(m.installed,true);
 });
 test('cancel interrupts pending work; retries discard installer progress', () => {
@@ -114,8 +118,36 @@ test('both gaming missions retain packages on cancellation and install their rec
   assert.equal(m.domain, 'jlfeng.example');
   m.query = '天气'; assert.equal(m.domain, 'jlfeng.example');
   m.openInstaller(); assert.match(renderGaming(m), /来源：jifeng.example/);
-  m.bundled = false; m.install(); m.tick(1500); assert.equal(m.complete, true);
+  m.bundled = false; m.install(); m.tick(1500); joinFriends(m); assert.equal(m.complete, true);
   m.reset(); assert.equal(m.packageTarget, null); assert.equal(m.packageReady, false);
   m.search('Steam'); assert.match(renderGaming(m), /search-result/);
   assert.ok(!renderGaming(m).includes('>打开网页</button>'));
+});
+test('library ownership and multiplayer route must be verified before joining friends', () => {
+  const m = new GamingMission('purchase');
+  m.joinVoice(); m.openAccelerator(); assert.equal(m.page, 'search');
+  m.search('Steam'); m.visit('fake'); m.checkout(); m.pay('probe', ''); m.openLibrary();
+  assert.equal(m.libraryChecked, false); assert.match(renderGaming(m), /尚未拥有绝地求死/);
+  m.back(); m.search('Steam'); m.visit('real'); m.checkout(); m.pay('play2026', '6392');
+  m.findAccelerator(); ready(m); m.bundled = false; m.install(); m.tick(1500);
+  assert.equal(m.page, 'accelerator'); m.selectRoute('east'); m.testRoute(); assert.equal(m.running, null);
+  m.openLibrary(); assert.equal(m.libraryChecked, true); m.openAccelerator();
+  m.selectRoute('shop'); m.testRoute(); m.tick(1500); m.joinVoice();
+  assert.equal(m.complete, false); assert.match(m.message, /只加速商店网页/);
+  m.selectRoute('west'); m.testRoute(); m.tick(1500); assert.match(m.message, /和队友不在同一区域/);
+  m.selectRoute('east'); m.testRoute(); m.tick(1499); m.joinVoice(); assert.equal(m.complete, false);
+  m.tick(1); assert.equal(m.routeReady, true); assert.equal(m.complete, false);
+  m.selectRoute('shop'); assert.equal(m.routeReady, false); m.joinVoice(); assert.equal(m.complete, false);
+  m.selectRoute('east'); m.testRoute(); m.tick(1500); m.joinVoice(); assert.equal(m.complete, true);
+  m.reset(); assert.equal(m.libraryChecked, false); assert.equal(m.route, ''); assert.equal(m.routeReady, false); assert.equal(m.voiceJoined, false);
+});
+
+test('route testing can be cancelled and cannot be changed while running', () => {
+  const m = new GamingMission('purchase');
+  m.search('Steam'); m.visit('real'); m.checkout(); m.pay('play2026', '6392'); m.openLibrary();
+  m.findAccelerator(); ready(m); m.bundled = false; m.install(); m.tick(1500);
+  m.selectRoute('east'); m.testRoute(); m.tick(500); m.selectRoute('shop'); assert.equal(m.route, 'east');
+  m.back(); m.tick(5000); assert.equal(m.page, 'library'); assert.equal(m.running, null); assert.equal(m.routeReady, false);
+  m.openAccelerator(); m.selectRoute('unknown'); assert.equal(m.route, 'east');
+  m.testRoute(); m.tick(500); m.reset(); m.tick(5000); assert.equal(m.complete, false); assert.equal(m.routeReady, false);
 });

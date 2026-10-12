@@ -23,3 +23,4 @@ body.in-game .retro-popup.installer-stack{left:auto;top:auto;right:10px;bottom:1
 .retro-cancel-confirm>div{display:flex;justify-content:flex-end;flex-wrap:wrap;gap:8px;border-top:1px solid #999;padding-top:12px}
 
 .search-pagination{display:flex;gap:10px;align-items:center;margin:24px 0 12px}.search-pagination button{min-width:44px;min-height:44px;background:#eef1fb;border:1px solid #b1bdd1;color:#00c;padding:6px 12px}.search-pagination button:disabled{background:#fff;color:#222;font-weight:bold}.attack-ad{width:270px;z-index:8}.attack-1{left:5%;top:8%}.attack-2{right:5%;top:15%}.attack-3{left:15%;bottom:8%}.attack-4{right:12%;bottom:12%}.danger-status{color:#bd140a!important;font-weight:bold}
+.official-hero>button[data-action="verify"]{display:block;margin:12px 0 18px}

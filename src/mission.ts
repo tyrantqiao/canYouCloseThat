@@ -14,6 +14,12 @@ export class BrowserMission {
   resultsPage = 1;
   selectedSite: SearchSite | null = null;
   get searchResults() { return resultsFor(this.query); }
+  get articleText() {
+    if (this.selectedSite?.kind !== 'article') return '';
+    if (this.selectedSite.id === 'review') return '楼主的使用记录：下载站让我装了导航工具栏。后来在星河实验室的版本日志找到 1.0，网址是 xinghe.example；他们刚修好了收藏夹中文乱码。';
+    if (this.selectedSite.id === 'news') return '本地新闻存档：星河实验室发布浏览器 1.0。发布说明提到修复收藏夹中文乱码，官网底部建议使用 1024 × 768 分辨率。';
+    return '帖子里有人聊拨号费用，也有人推荐重装。讨论已经歪楼，先记住自己要找的软件，再回结果页看看。';
+  }
   dangerElapsed = 0;
   dangerActive = false;
   back() { this.dangerActive = false; this.dangerElapsed = 0; this.ads = this.ads.filter(id => !id.startsWith('attack-')); this.page = this.searched ? 'results' : 'search'; }

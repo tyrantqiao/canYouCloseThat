@@ -3,6 +3,10 @@ import './memory.css';
 import './retro.css';
 import './viewport.css';
 import './results.css';
+import { createResultCard, createRunCard, renderResultCard, resultCardBlob, resultCardFilename } from './share-card';
+import { RunRecord } from './run-record';
+import type { ResultCard } from './share-card';
+import './share-card.css';
 import { ringPopupBell, ringBearMessage } from './sound';
 import { GameSession, levels, parseSave } from './game';
 import { BrowserMission } from './mission';
@@ -28,6 +32,7 @@ let game: GameSession | null = null;
 let toastTimer: ReturnType<typeof setTimeout>;
 let lastTime = performance.now();
 let recorded = false;
+const runRecord = new RunRecord();
 let practice = false;
 let escapeSide = false;
 let drag: { element: HTMLElement; x: number; y: number; left: number; top: number; scale: number } | null = null;
@@ -47,6 +52,7 @@ function shell(body: string) {
   app.innerHTML = `<header class="topbar"><button class="brand" data-action="home"><span class="brand-icon">×</span> 你能关掉吗<span class="brand-question">？</span></button><span class="edition">上网回忆册 / 弹窗求生</span></header>${body}<div id="toast" class="toast" role="status" aria-live="polite"></div><footer>关闭一个弹窗，找回一点清净。</footer>`;
 }
 function home() {
+  clearResultCard();
   game = null;
   document.body.classList.remove('in-game');
   shell(`<main class="home level-lobby"><section class="level-section"><div class="section-heading"><div><div class="eyebrow">你能关掉吗？ / 互联网弹窗求生</div><h1>选择关卡</h1></div><span>点击关卡，开始游戏</span></div><div class="level-grid">${levels.map((level, index) => `<button class="level-card" data-action="start" data-index="${index}"><div class="card-top"><span class="level-number">${String(index + 1).padStart(2, '0')}</span><span class="tag">${level.id === 20 ? '上网任务' : level.id === 1 ? '聊天购物' : level.id === 10 ? '网盘下载' : level.id === 4 ? '平台安装' : level.id === 40 ? '卸载清理' : '游戏购买'}</span></div><h3>${level.name}</h3><p>${level.time ? level.time + ' 秒限时' : '不限时'}</p><div class="card-bottom"><span>${save.best[level.id] ? '个人最快 ' + format(save.best[level.id]) : save.completed.includes(level.id) ? '已辅助通关' : '尚未通关'}</span><b>开始 →</b></div></button>`).join('')}</div></section><details class="lobby-settings"><summary>游戏设置</summary><div class="settings"><label><input id="practice" type="checkbox" ${practice ? 'checked' : ''}> 练习模式（关闭倒计时）</label><label><input id="motion" type="checkbox" ${save.reducedMotion ? 'checked' : ''}> 减少动态效果</label><span>纪录保存在当前浏览器。</span></div></details></main>`);
@@ -64,7 +70,8 @@ function drawWindows() {
     layer.innerHTML = game.closed.has('main') ? '' : popup('main', '贴心服务 · 关闭键有点社恐', `<div class="popup-body shy"><div class="shy-face">（•﹏•）</div><h2>别追我，我有点紧张。</h2><p>移动中：接近关闭键，它就换个位置。<br><b>拖动标题栏一次，让关闭键安心停下来。</b></p><button class="button outline" data-action="fix">固定窗口（也可拖动标题栏）</button><small id="shy-status">状态：移动中 / 键盘操作可直接关闭</small><button class="button coral" data-action="trap">开通社交会员，让它不再害羞</button></div>`, 'shy-window');
   }
 }
-function play(index: number) {
+function play(index: number, continueRun = false) {
+  if (!continueRun) runRecord.start(index);
   game = new GameSession(index, practice); recorded = false; lastTime = performance.now();
   announcedAds.clear();
   document.body.classList.add('in-game');
@@ -85,10 +92,6 @@ function play(index: number) {
   document.querySelector('#game-details')!.insertAdjacentHTML('beforeend', renderMemory(game.level.id));
   drawWindows(); overlay('ready'); updateHUD();
 }
-function resultEffect(won: boolean) {
-  const mark = won ? '<path class="result-mark" d="m22 39 11 11 23-25" />' : '<path class="result-mark" d="m27 27 24 24 m0-24-24 24" />';
-  return `<div class="result-emblem" aria-hidden="true"><svg viewBox="0 0 78 78"><circle class="result-ring" cx="39" cy="39" r="34" />${mark}</svg></div><div class="result-label">${won ? '挑战成功！' : '挑战失败'}</div>`;
-}
 function confetti() {
   const colors = ['#39a56a', '#eab547', '#ef8274', '#6c9ed8', '#ab85cf'];
   return `<div class="result-confetti" aria-hidden="true">${Array.from({ length: 48 }, (_, i) => {
@@ -96,19 +99,66 @@ function confetti() {
     return `<i style="--origin:${side ? '96%' : '4%'};--travel:${(side ? -1 : 1) * (35 + (i * 17 % 65))}cqw;--rise:${-30 - (i * 13 % 50)}cqh;--spin:${(i % 2 ? -1 : 1) * (360 + i * 23)}deg;--delay:${i % 8 * 0.045}s;--color:${colors[i % colors.length]}"></i>`;
   }).join('')}</div>`;
 }
-function overlay(type: string) {
+let activeResultCard: ResultCard | null = null;
+let resultImageUrl = '';
+let resultExportBusy = false;
+function clearResultCard() {
+  if (resultImageUrl) URL.revokeObjectURL(resultImageUrl);
+  resultImageUrl = ''; activeResultCard = null; resultExportBusy = false;
+}
+function overlay(type: string, showRun = type === 'won' && game?.levelIndex === levels.length - 1) {
+  clearResultCard();
   const el = document.querySelector('#overlay')!;
   if (!game) return;
   let content = '';
   if (type === 'ready') content = `<span class="eyebrow">准备好找回清净了吗？</span><h2>${game.level.name}</h2><p>${game.level.intro}</p><p class="modal-note">${game.level.time && !practice ? `本关限时 ${game.level.time} 秒 · ` : ''}每关 3 格耐心 · 提示与暂停标记为辅助</p><button class="button dark" data-action="begin">开始这一关 →</button>`;
   if (type === 'paused') content = `<span class="eyebrow">喘口气，广告也暂停了。</span><h2>暂停中</h2><p>计时和游戏操作已冻结。成绩已标记为辅助。</p><button class="button dark" data-action="resume">继续挑战 →</button>`;
   if (type === 'lost') content = `<span class="eyebrow">耐心下线，快乐还在。</span><h2>又被广告留住了。</h2><p>${game.reason}</p><p class="modal-note">死亡 ${game.deaths} 次 · 本次 ${format(game.elapsed)}</p><button class="button dark" data-action="retry">马上重试 ↻</button><button class="button outline" data-action="hint">看看提示</button>`;
-  if (type === 'won') content = `<span class="eyebrow">CLEAN INTERNET, FINALLY.</span><h2>${game.level.id === 40 ? '电脑清理好了！' : game.level.id === 20 ? '验收通过！' : game.level.id === 1 ? '胶片买到了！' : game.level.id === 10 ? '讲义下载完成！' : game.level.id === 4 ? 'Steam 安装成功！' : game.level.id === 30 ? '游戏准备就绪！' : game.levelIndex === levels.length - 1 ? '弹窗毕业生！' : '终于，清净了。'}</h2><p>${game.level.id === 40 ? (uninstall.achievement ? '获得称号：' + uninstall.achievement + '。2346 已卸载，打印工具仍可用。' : '2346 和本次新增程序均已清理，打印工具仍可用。') : game.level.id === 20 ? (mission.achievement ? '恭喜获得称号：' + mission.achievement + '。全程未点击任何弹窗，官网验收成功！' : '域名和发布者都对了，验收通过！') : game.level.id === 4 ? '客户端安装完成，白神话悟空的第一步准备好了。' : game.level.id === 30 ? '绝地求死已入库，加速器已安装。可以约朋友开局了！' : game.level.id === 10 ? '正确的讲义已保存，晚上上课有着落了。' : chat.testedFake ? '假口令识破假收款页！已在阿光的店铺完成胶片订单。' : '加对群、找对人，胶片订单已完成。'}</p><div class="result-stats"><div><strong>${format(game.elapsed)}</strong><span>本关成功用时</span></div><div><strong>${game.mistakes}</strong><span>累计误点</span></div><div><strong>${format(game.total)}</strong><span>本轮总时间</span></div></div><p class="modal-note">${game.assisted ? '辅助通关 · 不计入无辅助最快纪录' : '无辅助通关 · 已更新本地个人纪录'}${storageWarning ? ' · 浏览器禁用了存储，本次纪录仅在内存中保留' : ''}</p><button class="button dark" data-action="next">${game.levelIndex === levels.length - 1 ? '回大厅，再玩一轮' : '下一关 →'}</button><button class="button outline" data-action="retry">再挑战一次</button>`;
+  if (type === 'won') content = `<span class="eyebrow">CLEAN INTERNET, FINALLY.</span><h2>${game.level.id === 40 ? '电脑清理好了！' : game.level.id === 20 ? '验收通过！' : game.level.id === 1 ? '胶片买到了！' : game.level.id === 10 ? '讲义下载完成！' : game.level.id === 4 ? 'Steam 安装成功！' : game.level.id === 30 ? '游戏准备就绪！' : game.levelIndex === levels.length - 1 ? '弹窗毕业生！' : '终于，清净了。'}</h2><p>${game.level.id === 40 ? (uninstall.achievement ? '获得称号：' + uninstall.achievement + '。2346 已卸载，打印工具仍可用。' : '2346 和本次新增程序均已清理，打印工具仍可用。') : game.level.id === 20 ? (mission.achievement ? '恭喜获得称号：' + mission.achievement + '。全程未点击任何弹窗，官网验收成功！' : '域名和发布者都对了，验收通过！') : game.level.id === 4 ? 'Steam 快捷方式已创建。室友发来消息：“客户端装好了！今晚先聊悟空，游戏库慢慢准备。”' : game.level.id === 30 ? '绝地求死已在自己的游戏库，东亚联机测试通过。林林：“语音里听见你了，房间给你留好了，开局！”' : game.level.id === 10 ? '正确的讲义已保存，晚上上课有着落了。' : chat.testedFake ? '假口令识破假收款页！已在阿光的店铺完成胶片订单。' : '阿光给你留好了一卷晨光 200，明天寄出。周六 14:00，带相机和片筒去老邮局见。'}</p><div class="result-stats"><div><strong>${format(game.elapsed)}</strong><span>本关成功用时</span></div><div><strong>${game.mistakes}</strong><span>累计误点</span></div><div><strong>${format(game.total)}</strong><span>本轮总时间</span></div></div><p class="modal-note">${game.assisted ? '辅助通关 · 不计入无辅助最快纪录' : '无辅助通关 · 已更新本地个人纪录'}${storageWarning ? ' · 浏览器禁用了存储，本次纪录仅在内存中保留' : ''}</p><button class="button dark" data-action="next">${game.levelIndex === levels.length - 1 ? '回大厅，再玩一轮' : '下一关 →'}</button><button class="button outline" data-action="retry">再挑战一次</button>`;
   const result = type === 'won' || type === 'lost';
-  el.innerHTML = content ? `<div class="veil ${result ? 'result-veil result-' + type : ''}">${type === 'won' ? confetti() : ''}<section class="modal" role="dialog" aria-modal="true" aria-label="${type === 'ready' ? '开始关卡' : type === 'paused' ? '暂停' : type === 'lost' ? '挑战失败' : '通关结算'}">${result ? resultEffect(type === 'won') : ''}${content}</section></div>` : '';
+  if (result) {
+    if (type === 'won') runRecord.record(game);
+    const summary = type === 'won' && showRun ? runRecord.summary : null;
+    activeResultCard = summary ? createRunCard(summary) : createResultCard(game, type === 'won', (game.level.id === 40 ? uninstall.achievement : game.level.id === 20 ? mission.achievement : '') || '');
+    content = content.replace(/^<span class="eyebrow">[\s\S]*?<\/h2>/, '').replace(/<div class="result-stats">[\s\S]*?<\/div><\/div>/, '');
+    content = renderResultCard(activeResultCard) + (type === 'won' ? `<button class="button outline result-card-toggle" data-action="${summary ? 'single-result' : 'run-result'}">${summary ? '查看单关战绩' : '查看本轮总战绩'}</button>` : '') + '<div class="result-share-actions"><button class="button dark" data-action="export-result">保存战绩图片</button><button class="button outline" data-action="preview-result">预览 / 长按保存</button></div><p class="result-export-status" role="status" aria-live="polite">导出高清 PNG，可发给朋友挑战。</p><div class="result-image-preview" hidden></div><div class="result-original">' + content + '</div>';
+  }
+  el.innerHTML = content ? `<div class="veil ${result ? 'result-veil result-' + type : ''}">${type === 'won' ? confetti() : ''}<section class="modal" role="dialog" aria-modal="true" aria-label="${type === 'ready' ? '开始关卡' : type === 'paused' ? '暂停' : type === 'lost' ? '挑战失败' : '通关结算'}">${content}</section></div>` : '';
   document.querySelector<HTMLElement>('#windows')!.inert = !!content;
   document.querySelector<HTMLElement>('.website')!.inert = !!content;
   el.querySelector<HTMLButtonElement>('.button')?.focus();
+}
+async function exportResultImage(preview: boolean) {
+  const card = activeResultCard;
+  if (!card || resultExportBusy) return;
+  resultExportBusy = true;
+  const buttons = app.querySelectorAll<HTMLButtonElement>('[data-action="export-result"], [data-action="preview-result"]');
+  buttons.forEach(button => button.disabled = true);
+  const status = app.querySelector<HTMLElement>('.result-export-status');
+  if (status) status.textContent = '正在生成战绩图片…';
+  try {
+    const blob = await resultCardBlob(card);
+    if (activeResultCard !== card) return;
+    if (preview) {
+      if (resultImageUrl) URL.revokeObjectURL(resultImageUrl);
+      resultImageUrl = URL.createObjectURL(blob);
+      const container = app.querySelector<HTMLElement>('.result-image-preview');
+      if (container) {
+        const image = document.createElement('img'); image.src = resultImageUrl; image.alt = card.entries ? '本轮总战绩图片，可长按保存' : '第 ' + card.level + ' 关战绩图片，可长按保存';
+        container.replaceChildren(image); container.hidden = false; image.scrollIntoView({ block: 'nearest' });
+      }
+      if (status) status.textContent = '图片已生成。手机可长按图片保存，电脑可右键另存为。';
+    } else {
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a'); link.href = url; link.download = resultCardFilename(card);
+      document.body.append(link); link.click(); link.remove(); setTimeout(() => URL.revokeObjectURL(url), 60000);
+      if (status) status.textContent = '已发起 PNG 下载。如未出现保存选项，可用“预览 / 长按保存”。';
+    }
+  } catch (error) {
+    if (activeResultCard === card && status) status.textContent = error instanceof Error ? error.message : '图片生成失败，请重试或截图保存。';
+  } finally {
+    if (activeResultCard === card) { resultExportBusy = false; buttons.forEach(button => button.disabled = false); }
+  }
 }
 function toast(message: string) {
   const el = document.querySelector('#toast')!;
@@ -159,6 +209,8 @@ app.addEventListener('click', event => {
     requestAnimationFrame(fitPopupWindows);
     return;
   }
+  if (action === 'export-result' || action === 'preview-result') { void exportResultImage(action === 'preview-result'); return; }
+  if ((action === 'run-result' || action === 'single-result') && game.status === 'won') { overlay('won', action === 'run-result'); return; }
   const mistakesBefore = game.mistakes;
   if (action === 'begin') { if (game.level.id === 1 && popupSound) ringBearMessage(); game.start(); lastTime = performance.now(); overlay(''); announceMissionAds(); if (game.level.id === 40) drawScenario(); }
   if (action === 'pause') { game.pause(); if (game.status === 'paused') overlay('paused'); }
@@ -168,7 +220,7 @@ app.addEventListener('click', event => {
   if (action === 'next') {
     if (game.levelIndex === levels.length - 1) { home(); return; }
     const previous = game;
-    play(previous.levelIndex + 1);
+    play(previous.levelIndex + 1, true);
     game!.total = previous.total; game!.mistakes = previous.mistakes; game!.deaths = previous.deaths;
     game!.retries = previous.retries; game!.assisted = previous.assisted; updateHUD();
   }
@@ -307,7 +359,7 @@ function loop(now: number) {
       const progress = document.querySelector<HTMLProgressElement>('#gaming-progress');
       if (progress) progress.value = current.progress;
       const label = document.querySelector('#gaming-progress-label');
-      if (label && current.running) label.textContent = (current.running === 'download' ? '下载中 ' : '安装中 ') + Math.floor(current.progress / 15) + '%';
+      if (label && current.running) label.textContent = (current.running === 'route' ? '测试中 ' : current.running === 'download' ? '下载中 ' : '安装中 ') + Math.floor(current.progress / 15) + '%';
     }
     if (game.level.id === 20 && game.status === 'playing') {
       if (mission.tickDownload(delta)) { drawMissionAds(); feedback('下载完成，安装程序已弹出。注意默认勾选的推荐组件。'); }
@@ -342,7 +394,7 @@ function drawMissionPage() {
   if (mission.page === 'desktop') body = `<div class="old-desktop"><button class="desktop-icon" data-action="open-browser"><span>🌐</span>冲浪浏览器</button><div class="desktop-note"><b>小纸条 / 今天的任务</b><p>帮我找一下「星河浏览器」的官方网站。<br>别去那些乱七八糟的下载站！</p><p>官方域名：<strong>xinghe.example</strong><br>发布者：星河实验室</p><small>双击太麻烦，点一下图标就能打开。</small></div><div class="taskbar">▦ 开始 <span>本地连接　｜　100.0 Mbps</span><span>2006 / 10 / 11</span></div></div>`;
   else if (mission.page === 'search' || mission.page === 'results') body = `<div class="old-browser-tools"><button data-action="browser-back">◀ 后退</button><span>文件(F)　编辑(E)　查看(V)　收藏(A)　工具(T)　帮助(H)</span></div><div class="search-page ${mission.page === 'results' ? 'has-results' : ''}"><div class="search-logo"><span>X</span><b>度</b><small>有事没事，X 度一下</small></div><div class="search-tabs">网页　图片　贴吧　知道　MP3　更多 »</div><form id="search-form"><input id="search-query" aria-label="X度搜索关键词" autocomplete="off" placeholder="请输入搜索关键词"><button type="submit">X 度一下</button></form>${mission.page === 'results' ? `<div class="result-count">X 度为您找到相关结果约 9,999,999 个　用时 0.001 秒</div>${renderSearchResults()}` : `<p class="search-slogan">全球中文搜索体验 · 让知识触手可及</p><div class="old-links">设为首页　｜　加入收藏　｜　关于 X 度</div>`}</div>`;
   else if (mission.page === 'fake') body = renderVisitedSite();
-  else body = `<div class="old-browser-tools"><button data-action="browser-back">◀ 返回搜索结果</button><span>文件(F)　编辑(E)　查看(V)　收藏(A)</span></div><div class="official-site"><header>✧ 星河实验室 <span>首页　产品　开发日志　关于我们</span></header><div class="official-hero"><small>XINGHE BROWSER / VERSION 1.0</small><h2>让上网，回归浏览。</h2><p>星河浏览器 · 一个清净的开始。</p><p>开发日志 / 2006-10-11：修复收藏夹中文乱码，保留状态栏网址显示。</p><div class="official-seal">官方网站 <b>xinghe.example</b><span>软件发布者：星河实验室</span></div><button data-action="verify" class="button dark">${mission.verified ? '✓ 已核对发布者' : '验收：确认官网与发布者'}</button></div><div class="official-footer">© 2006 星河实验室 · 建议分辨率 1024 × 768</div></div>`;
+  else body = `<div class="old-browser-tools"><button data-action="browser-back">◀ 返回搜索结果</button><span>文件(F)　编辑(E)　查看(V)　收藏(A)</span></div><div class="official-site"><header>✧ 星河实验室 <span>首页　产品　开发日志　关于我们</span></header><div class="official-hero"><small>XINGHE BROWSER / VERSION 1.0</small><button data-action="verify" class="button dark">${mission.verified ? '✓ 已核对发布者' : '验收：确认官网与发布者'}</button><h2>让上网，回归浏览。</h2><p>星河浏览器 · 一个清净的开始。</p><p>开发日志 / 2006-10-11：修复收藏夹中文乱码，保留状态栏网址显示。</p><div class="official-seal">官方网站 <b>xinghe.example</b><span>软件发布者：星河实验室</span></div></div><div class="official-footer">© 2006 星河实验室 · 建议分辨率 1024 × 768</div></div>`;
   website.innerHTML = `<div class="mission-strip"><b>任务：找到「星河浏览器」官网</b><span>${mission.opened ? '✓' : '○'} 打开浏览器 → ${mission.searched ? '✓' : '○'} 搜索 → ${mission.verified ? '✓' : '○'} 核对官网</span></div>${body}`;
   const input = document.querySelector<HTMLInputElement>('#search-query');
   if (input) input.value = mission.query;
@@ -357,7 +409,7 @@ function renderVisitedSite() {
   const site = mission.selectedSite;
   if (!site) return '<button data-action="browser-back">返回搜索</button>';
   const dangerous = site.kind === 'phishing' || site.kind === 'malware';
-  return `<div class="old-browser-tools"><button data-action="browser-back">◀ 返回搜索结果</button><span>文件(F)　编辑(E)　查看(V)　收藏(A)</span></div><div class="fake-site"><div class="fake-site-head">${escapeHTML(site.title)}<small>${escapeHTML(site.publisher)}</small></div><h2>${site.kind === 'game' ? '全新一区 · 今晚开服' : site.kind === 'article' ? '软件使用记录' : '欢迎访问'}</h2><p>${escapeHTML(site.description)}</p><p>发布者：${escapeHTML(site.publisher)} · 域名：${escapeHTML(site.domain)}</p>${dangerous ? '<p class="danger-status">此页要求安装未知网页组件、验证账户。发布者与官网不符，请先核对来源。</p><button data-action="site-download">同意安装网页组件</button><button data-action="browser-back">立即离开此页</button>' : site.kind === 'article' ? '' : '<button data-action="site-download" class="old-download">'+(site.kind === 'game' ? '下载游戏客户端' : '立即高速下载（推荐）')+'</button><button data-action="site-pay">开通付费服务</button>'}<button data-action="verify">核对发布者，提交任务</button><button data-action="browser-back">返回搜索结果</button></div>`;
+  return `<div class="old-browser-tools"><button data-action="browser-back">◀ 返回搜索结果</button><span>文件(F)　编辑(E)　查看(V)　收藏(A)</span></div><div class="fake-site"><div class="fake-site-head">${escapeHTML(site.title)}<small>${escapeHTML(site.publisher)}</small></div><h2>${site.kind === 'game' ? '全新一区 · 今晚开服' : site.kind === 'article' ? '软件使用记录' : '欢迎访问'}</h2><p>${escapeHTML(site.description)}</p><p>发布者：${escapeHTML(site.publisher)} · 域名：${escapeHTML(site.domain)}</p>${dangerous ? '<p class="danger-status">此页要求安装未知网页组件、验证账户。发布者与官网不符，请先核对来源。</p><button data-action="site-download">同意安装网页组件</button><button data-action="browser-back">立即离开此页</button>' : site.kind === 'article' ? `<article class="archive-note"><h3>上网人的留言</h3><p>${escapeHTML(mission.articleText)}</p></article>` : '<button data-action="site-download" class="old-download">'+(site.kind === 'game' ? '下载游戏客户端' : '立即高速下载（推荐）')+'</button><button data-action="site-pay">开通付费服务</button>'}<button data-action="verify">核对发布者，提交任务</button><button data-action="browser-back">返回搜索结果</button></div>`;
 }
 function drawMissionAds() {
   const layer = document.querySelector('#windows')!;
@@ -473,7 +525,7 @@ function drawScenario() {
 function finishScenario() {
   if (game?.level.id === 40) { if (game.status === 'playing' && uninstall.complete) { game.close('main'); feedback('2346 和新增程序都清理好了，打印预览已打开。'); } return; }
   if (game?.status === 'playing' && (game.level.id === 1 ? chat.complete : game.level.id === 10 ? drive.complete : game.level.id === 4 ? steam.complete : gaming.complete)) {
-    game.close('main'); feedback(game.level.id === 1 ? '胶片订单完成！' : game.level.id === 10 ? '资料下载完成！' : game.level.id === 4 ? 'Steam 安装成功！' : '游戏购买与加速器安装完成！');
+    game.close('main'); feedback(game.level.id === 1 ? '胶片订单完成！' : game.level.id === 10 ? '资料下载完成！' : game.level.id === 4 ? 'Steam 安装成功！' : '游戏入库、联机测试和语音准备完成！');
   }
 }
 function scenarioTrap(message: string) { game!.trap(message); feedback(message); damageFeedback(); }
@@ -490,6 +542,7 @@ function handleScenarioAction(action: string, target: HTMLElement) {
   if (action === 'chat-join') chat.join(target.dataset.id!);
   if (action === 'chat-talk') { chat.talk(); if (popupSound) ringBearMessage(); }
   if (action === 'chat-shop') chat.openShop();
+  if (action === 'chat-ask') chat.send(target.dataset.id || '');
   if (action === 'chat-back') { chat.page = 'chat'; chat.message = ''; }
   if (action === 'chat-checkout') chat.checkout = true;
   if (action === 'chat-secret') { chat.message = '对方索要银行卡和密码，交易已中止。可返回查找正确的群。'; scenarioTrap('把银行卡和密码交给陌生人，耐心 −1。'); }
@@ -504,6 +557,7 @@ function handleScenarioAction(action: string, target: HTMLElement) {
   if (action === 'drive-home') { drive.page = 'search'; drive.message = ''; }
   if (action === 'drive-open') drive.open(target.dataset.id!);
   if (action === 'drive-file') drive.choose(target.dataset.id!);
+  if (action === 'drive-preview') drive.preview(target.dataset.id!);
   if (action === 'drive-files') { drive.page = 'files'; drive.message = ''; }
   if (action === 'drive-fast') { drive.message = '下载了加速器安装包，讲义还没有保存。可改用普通下载。'; scenarioTrap('高速按钮下载的是客户端，还附带桌面导航。耐心 −1。'); }
   if (action === 'drive-save' && drive.download()) scenarioTrap('下载的是安装程序，核对分享来源和完整文件类型。耐心 −1。');
@@ -520,7 +574,8 @@ app.addEventListener('submit', event => {
   if (form.dataset.task === 'gaming-address' && game.level.id === 4) steam.navigateAddress(value('url'));
   if (form.dataset.task === 'gaming-search') (game.level.id === 4 ? steam : gaming).search(value('query'));
   if (form.dataset.task === 'gaming-pay' && gaming.pay(value('password'), value('code'))) scenarioTrap('向假商店交出了支付口令。核对收款方和网址，耐心 −1。');
-  if (form.dataset.task === 'chat-send') { const message = value('message'); if (message) { chat.sentMessages.push(message); if (!chat.friendChat && popupSound) ringBearMessage(); } }
+  if (form.dataset.task === 'chat-send') { const message = value('message'); if (message) { chat.send(message); if (!chat.friendChat && popupSound) ringBearMessage(); } }
+  if (form.dataset.task === 'gaming-route' && game.level.id === 30) { gaming.selectRoute(value('route')); gaming.testRoute(); }
   if (form.dataset.task === 'chat-search') { chat.query = value('query'); chat.message = chat.results.length ? '' : '没有找到匹配的群，换个关键词试试。'; }
   if (form.dataset.task === 'chat-answer') chat.answer(value('answer'));
   if (form.dataset.task === 'chat-pay') {
@@ -547,10 +602,23 @@ function handleGamingAction(action: string, target: HTMLElement) {
   if (action === 'gaming-install' && m.install()) scenarioTrap('推荐组件会安装工具栏并修改主页。耐心 −1，取消勾选后可重试。');
   if (action === 'gaming-checkout') m.checkout();
   if (action === 'gaming-accelerator') m.findAccelerator();
+  if (action === 'gaming-library') m.openLibrary();
+  if (action === 'gaming-open-accelerator') m.openAccelerator();
+  if (action === 'gaming-join-voice') m.joinVoice();
 }
 app.addEventListener('change', event => {
   const input = event.target as HTMLInputElement;
   if (input.dataset.uninstallOption && game?.level.id === 40 && game.status === 'playing') { uninstall.setOption(input.dataset.uninstallOption, input.type === 'radio' ? input.value === 'true' : input.checked); return; }
+  if (input.name === 'route' && game?.level.id === 30 && game.status === 'playing') {
+    gaming.selectRoute(input.value);
+    const join = document.querySelector<HTMLButtonElement>('[data-action="gaming-join-voice"]');
+    if (join) join.disabled = !gaming.routeReady;
+    const message = document.querySelector<HTMLElement>('.gaming-app .task-message');
+    if (message) message.textContent = gaming.message;
+    const status = document.querySelector<HTMLElement>('#gaming-preparation');
+    if (status) status.textContent = gaming.preparationProgress;
+    return;
+  }
   if (input.id !== 'gaming-bundle' || game?.status !== 'playing' || ![4,30].includes(game.level.id)) return;
   const m = game.level.id === 4 ? steam : gaming;
   if (m.page === 'installer' && !m.running) m.bundled = input.checked;

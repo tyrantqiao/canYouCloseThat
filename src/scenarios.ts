@@ -10,10 +10,26 @@ export class ChatMission {
   get friend() { return bearFriends.find(f => f.id === this.friendId) || bearFriends[0]; }
   opened = false; minimized = false; contacts = true; unread = true; friendChat = false;
   private transcripts = new Map<string, string[]>();
+  private replies = new Map<string, Map<number, string>>();
+  private get conversationKey() { return this.friendChat ? 'friend:' + this.friendId : (this.chatting ? 'private:' : 'group:') + this.selected; }
   get sentMessages() {
-    const key = this.friendChat ? 'friend:' + this.friendId : (this.chatting ? 'private:' : 'group:') + this.selected;
+    const key = this.conversationKey;
     if (!this.transcripts.has(key)) this.transcripts.set(key, []);
     return this.transcripts.get(key)!;
+  }
+  replyFor(index: number) { return this.replies.get(this.conversationKey)?.get(index); }
+  send(value: string) {
+    const text = value.trim().slice(0, 300);
+    if (!text || !this.opened || this.minimized || this.contacts || (!this.friendChat && this.page !== 'chat')) return;
+    this.sentMessages.push(text);
+    if (this.friendChat && !this.friend.online) return;
+    let reply = '';
+    if (this.friendChat) reply = this.friendId === 'lin' ? (/群|店|阿光/.test(text) ? '我常去的是 73021680。阿光周六也去老邮局，店铺地址我留在前面的消息里了。' : /扫街|周末|冲洗/.test(text) ? '周六两点在老邮局见，拍完留好片筒，冲洗扫描另算。问问阿光能不能明天寄出。' : '等你买好胶片，周末一起拍。群公告里还留着集合时间。') : this.friend.greeting;
+    else if (!this.chatting) reply = this.selected === 'real' ? '阿光：周六 14:00 老邮局集合，照片压到 800 像素再传相册。买胶片可以点成员旁的私聊找我。' : '阿光：集合安排稍后通知，买胶片先私聊我。';
+    else if (this.selected === 'real') reply = /冲洗|扫描/.test(text) ? '一卷价格只含胶片，冲洗扫描另计。拍完把片筒留好，不用寄相机。' : /扫街|周末|邮局/.test(text) ? '周六 14:00 老邮局门口，我带片筒去。群相册只收 800 像素的小图，原图自己留着。' : /库存|现货|寄|胶片/.test(text) ? '晨光 200 还有现货，一卷 36 张。明天寄出，正常保存到 2008 年；一卷 ¥38，普通邮寄。' : '想问库存、周末扫街还是冲洗？我都在。店铺链接在前面，买一卷就能去拍了。';
+    else reply = /扫街|周末|邮局/.test(text) ? '集合地点还没定，付款后我再发通知。' : /冲洗|扫描/.test(text) ? '套餐都包了，先付款，具体怎么寄稍后说。' : '有现货，付款就安排。店铺链接在前面的消息里。';
+    if (!this.replies.has(this.conversationKey)) this.replies.set(this.conversationKey, new Map());
+    this.replies.get(this.conversationKey)!.set(this.sentMessages.length - 1, reply);
   }
   close() { this.opened = false; this.minimized = false; this.contacts = true; this.friendChat = false; }
   showFriend(id: string) {
@@ -33,7 +49,7 @@ export class ChatMission {
     return hobbyGroups.filter(group => group.name.includes(query) || group.number.includes(query))
       .sort((a, b) => Number(b.promoted) - Number(a.promoted) || Number(a.id === 'real') - Number(b.id === 'real'));
   }
-  reset() { this.friendId = 'lin'; this.opened = false; this.minimized = false; this.contacts = true; this.unread = true; this.friendChat = false; this.transcripts.clear(); this.query = ''; this.selected = ''; this.joined.clear(); this.page = 'groups'; this.chatting = false; this.checkout = false; this.testedFake = false; this.complete = false; this.message = ''; }
+  reset() { this.friendId = 'lin'; this.opened = false; this.minimized = false; this.contacts = true; this.unread = true; this.friendChat = false; this.transcripts.clear(); this.replies.clear(); this.query = ''; this.selected = ''; this.joined.clear(); this.page = 'groups'; this.chatting = false; this.checkout = false; this.testedFake = false; this.complete = false; this.message = ''; }
   join(id: string) { const group = hobbyGroups.find(group => group.id === id); if (!group) return; this.open(); this.contacts = false; this.friendChat = false; this.selected = id; this.chatting = false; this.checkout = false; this.message = ''; this.page = group.approval && !this.joined.has(id) ? 'question' : 'chat'; if (!group.approval) this.joined.add(id); }
   answer(value: string) { if (this.page !== 'question' || !this.group) return; if (value.trim() !== '银盐') { this.message = '回答不正确，请查阅朋友留下的群公告。'; return; } this.joined.add(this.selected); this.page = 'chat'; this.message = '入群申请已通过。'; }
   talk() { if (this.page !== 'chat' || !this.joined.has(this.selected)) return; this.friendChat = false; this.chatting = true; this.message = ''; }
@@ -43,7 +59,7 @@ export class ChatMission {
     if (this.selected !== 'real') { this.testedFake ||= password !== 'film2006'; this.message = '支付成功！订单已受理。'; return true; }
     if (code !== '4826') { this.message = '验证码不正确，支付未提交。'; return false; }
     if (password !== 'film2006') { this.message = '支付口令不正确，付款失败。'; return false; }
-    this.complete = true; this.message = '付款成功！阿光已收到订单，胶片将于明天寄出。'; return false;
+    this.complete = true; this.message = '付款成功！阿光：给你留好一卷晨光 200，明天寄出。周六两点老邮局见，记得带相机和片筒。'; return false;
   }
 }
 export const driveShares = [
@@ -81,11 +97,15 @@ export class DriveMission {
   open(id: string) { if (this.activeApp !== 'real' || this.minimized) return; if (!driveShares.some(([key]) => key === id)) return; this.selected = id; this.page = 'share'; this.unlocked = false; this.file = ''; this.message = ''; }
   unlock(code: string) { if (this.activeApp !== 'real' || this.minimized) return; if (this.page !== 'share' || !this.selected) return; if (code !== 'xj06') { this.message = '提取码不正确。'; return; } this.unlocked = true; this.page = 'files'; this.message = ''; }
   choose(file: string) { if (this.activeApp !== 'real' || this.minimized) return; if (!this.unlocked || !['files', 'download'].includes(this.page) || !driveFiles.some(([key]) => key === file)) return; this.file = file; this.page = 'download'; this.message = ''; }
-  download() { if (this.activeApp !== 'real' || this.minimized) return false; if (this.page !== 'download') return false; if (this.selected !== 'real' || this.file !== 'pdf') { this.message = '下载的是安装程序，资料还没有拿到。可以返回重新选择。'; return true; } this.complete = true; this.message = '摄影入门讲义.pdf 已保存，资料任务完成！'; return false; }
+  preview(file: string) {
+    if (this.activeApp !== 'real' || this.minimized || !this.unlocked || !['files', 'download'].includes(this.page) || !driveFiles.some(([key]) => key === file)) return;
+    this.message = file !== 'pdf' ? '文件预览：此文件不是可直接阅读的 PDF 文档，无法展示讲义页面。' : this.selected !== 'real' ? '文件预览：资源助手使用说明 · 1 页。内容要求运行安装程序，与 24 页摄影课讲义不符。' : '摄影入门讲义 · 第 1 / 24 页\n暗房小陈 / 周末摄影课\n目录：接触印样、曝光记录表、胶片保存。\n打印备注：A4 黑白双面，课上带笔填写曝光记录。';
+  }
+  download() { if (this.activeApp !== 'real' || this.minimized) return false; if (this.page !== 'download') return false; if (this.selected !== 'real' || this.file !== 'pdf') { this.message = '下载的是安装程序，资料还没有拿到。可以返回重新选择。'; return true; } this.complete = true; this.message = '摄影入门讲义.pdf 已保存到“我的文档 / 周末摄影课”。林林：24 页讲义拿到了，今晚带去上课，曝光记录表记得留着填写。'; return false; }
 }
 function renderChatContent(m: ChatMission) {
   const nav = '<button data-action="chat-home">← 查找群</button>';
-  const note = '<aside class="task-note"><b>朋友的熊消息</b><p>搜索「胶片摄影」，找「胶片摄影交流社」，群号 <strong>73021680</strong>。入群问题答案在公告里：传统胶片的感光材料是<strong>银盐</strong>。找群主阿光购买一卷晨光 200 胶片。</p><p>阿光的店铺：<b>film-club.example</b>。熊钱包支付口令：<b>film2006</b>。</p></aside>';
+  const note = '<aside class="task-note"><b>朋友的熊消息</b><p>搜索「胶片摄影」，找「胶片摄影交流社」，群号 <strong>73021680</strong>。入群题看群公告；想核对周末安排，可以在聊天里问问。找群主阿光购买一卷晨光 200 胶片。</p><p>阿光的店铺：<b>film-club.example</b>。熊钱包支付口令：<b>film2006</b>。</p></aside>';
   let body = '';
   if (m.page === 'groups') body = `<h2>🐻‍❄️ 某熊 · 查找兴趣群</h2><form data-task="chat-search"><label>关键词或群号<input name="query" value="${escapeText(m.query)}" placeholder="输入兴趣关键词" required maxlength="60"></label><button>查找</button></form><div class="task-results">${m.results.map(g => `<article class="${g.promoted ? 'group-promoted' : ''}">${g.promoted ? '<span class="group-promotion" aria-label="推广">推</span>' : ''}<h3>${g.name}</h3><p>群号：${g.number} · ${g.approval ? '回答问题后审核' : '开放加入'}</p><button data-action="chat-join" data-id="${g.id}">加入群</button></article>`).join('') || '<p>输入关键词，查找与你兴趣相同的人。</p>'}</div>`;
   if (m.page === 'question') body = `${nav}<h2>${m.group!.name} · 入群申请</h2><p>群号 ${m.group!.number}</p><p>群公告：传统胶片靠银盐感光，请尊重原创，交流拍摄心得。周六 14:00 老邮局门口扫街，带相机和片筒；照片压到 800 像素再传群相册。</p><form data-task="chat-answer"><label>传统胶片的感光材料是什么？<input name="answer" required maxlength="30"></label><button>提交申请</button></form>`;
@@ -98,7 +118,7 @@ function renderDriveContent(m: DriveMission) {
   let body = '<button data-action="drive-home">← 找分享</button>';
   if (m.page === 'search') body = `<h2>☁ 云朵网盘 · 找资料</h2><p class="archive-note">班级 BBS / 资源共享区：邮件附件放不下，改传网盘。只需要讲义，别把下载器当成课程资料。</p><form data-task="drive-search"><label>资料关键词<input name="query" value="${escapeText(m.query)}" required maxlength="60"></label><button>查找分享</button></form>${m.query ? (m.results.length ? `<div class="task-results">${m.results.map(([id,title,owner,number]) => `<article><h3>${title}</h3><p>分享者：${owner} · 分享号 ${number}</p><button data-action="drive-open" data-id="${id}">查看分享</button></article>`).join('')}</div>` : '<p>没有找到相关分享，换一个关键词试试。</p>') : '<p>查找朋友分享的课程资料。</p>'}`;
   if (m.page === 'share') body += `<h2>周末摄影课</h2><p>分享者：${m.selected === 'real' ? '暗房小陈 · XC2006' : m.selected === 'fake' ? '资料搬运助手 · XC2008' : '高速下载客服 · XC2060'}</p><form data-task="drive-code"><label>请输入提取码<input name="code" required maxlength="20"></label><button>提取文件</button></form>`;
-  if (m.page === 'files') body += `<h2>分享文件</h2><p class="archive-note">上传备注 / 2012-10-11：从课代表的 U 盘整理，24 页黑白讲义，含接触印样和曝光记录表。打印选 A4 双面，文件名里带 XC2006 是社团编号。</p><div class="task-results">${driveFiles.map(([id,name,type]) => `<article><h3>${name}</h3><p>${type}</p><button data-action="drive-file" data-id="${id}">选择文件</button></article>`).join('')}</div>`;
+  if (m.page === 'files') body += `<h2>分享文件</h2><p class="archive-note">上传备注 / 2012-10-11：从课代表的 U 盘整理，24 页黑白讲义，含接触印样和曝光记录表。打印选 A4 双面，文件名里带 XC2006 是社团编号。</p><div class="task-results">${driveFiles.map(([id,name,type]) => `<article><h3>${name}</h3><p>${type}</p><button data-action="drive-preview" data-id="${id}">预览内容</button><button data-action="drive-file" data-id="${id}">选择文件</button></article>`).join('')}</div>`;
   if (m.page === 'download') body += `<button data-action="drive-files">← 返回文件列表</button><h2>${m.file === 'pdf' ? '摄影入门讲义.pdf' : m.file === 'exe' ? '摄影入门讲义.pdf.exe' : '摄影入门讲义_高速下载.zip'}</h2><p>选择下载方式</p><div class="download-options"><article><h3>高速下载</h3><p>使用云朵加速器，需下载并安装客户端；默认添加桌面导航。</p><button data-action="drive-fast">立即高速下载</button></article><article><h3>普通下载</h3><p>${m.selected === 'real' ? '直接保存所选文件，无需客户端。保存到“我的文档 / 周末摄影课”；以完整扩展名和文件类型为准。' : '先下载资源助手_setup.exe，运行后获取资料。'}</p><button data-action="drive-save">普通下载</button></article></div>`;
   return `<div class="scenario-app">${note}<main>${body}<p class="task-message" role="status">${escapeText(m.message)}</p></main></div>`;
 }
@@ -121,7 +141,8 @@ function renderConversation(m: ChatMission) {
   const line = (who: string, text: string, mine = false) => `<div class="qq-record ${mine ? 'qq-record-mine' : ''}"><div class="qq-record-meta">${who}<time>20:06:18</time></div><div class="qq-record-text">${text}</div></div>`;
   let history = friend ? line('林林', '胶片群找到了！群号 73021680，找群主阿光买一卷晨光 200。入群题读群公告就知道啦。') + line('林林', '阿光店铺是 film-club.example，别认错了。网吧快到下机时间，我把群号写在消息记录里了，别只凭群头像认人。') : privateChat ? line('聽風づ北極星', '你好，想买一卷晨光 200，还有现货吗？', true) + (m.selected === 'real' ? line('阿光', '有现货，¥38。周六去老邮局扫街的话，明天就能寄出；冲洗扫描另计。一卷起售，在我的店铺看详情，再用熊钱包付款即可。') + line('阿光', '<button class="qq-message-link" data-action="chat-shop">https://film-club.example</button>') : line('阿光', '先把银行卡号和密码发我，直接帮你扣款。也可以到我的同款店铺自助支付。') + line('阿光', '<button class="qq-message-link" data-action="chat-shop">https://film-c1ub.example</button>')) : '<div class="qq-system-line">你已加入群聊，和大家打个招呼吧。</div>' + line('阿光（群主）', '欢迎进群，请先看群公告。有胶片购买需求可以私聊我。');
   if (friend && m.friendId !== 'lin') history = line(name, escapeText(m.friend.greeting));
-  history += m.sentMessages.map(text=>line('聽風づ北極星',escapeText(text),true)).join('');
+  history += m.sentMessages.map((text,index)=>line('聽風づ北極星',escapeText(text),true) + (m.replyFor(index) ? line(name,escapeText(m.replyFor(index)!)) : '')).join('');
+  if (privateChat && !(friend && !m.friend.online)) history += `<div class="chat-topics" aria-label="可以聊的话题">${['还有胶片现货吗？','周末扫街在哪集合？','冲洗扫描怎么算？'].map(topic=>`<button data-action="chat-ask" data-id="${topic}">${topic}</button>`).join('')}</div>`;
   const side = privateChat ? `<div class="qq-contact-card"><span>${friend ? m.friend.avatar : '🎞️'}</span><b>${name}</b><small>${friend && !m.friend.online ? '○ 离线' : '● 在线'}</small>${friend ? '<div class="bear-level">'+m.friend.level+'</div>'+diamondIcons(m.friend.diamonds) : ''}<p>${friend ? escapeText(m.friend.signature) : '拍胶片，慢慢来。'}</p></div>` : `<div class="qq-group-notice"><b>群公告</b><p>传统胶片靠银盐感光。周六 14:00 老邮局门口扫街；照片压到 800 像素再传群相册。请尊重原创。</p><b>群成员（${m.group!.members.length}）</b></div><div class="qq-members">${m.group!.members.map(member=>`<div><span>${member.includes('群主')?'👑':'👤'}</span>${member}${member.includes('群主')?'<button data-action="chat-talk">私聊</button>':''}</div>`).join('')}</div>`;
   return `<div class="qq-conversation"><header class="qq-conversation-head"><span>${privateChat ? '💬' : '👥'}</span><div><h2>${name}</h2><small>${privateChat ? friend && !m.friend.online ? '离线 · 可以留言' : '在线 · 与好友聊天' : '群号 '+m.group!.number}</small></div><span class="qq-head-tools">语音　视频</span></header><div class="qq-conversation-grid"><section class="qq-chat-main"><div class="qq-history" role="log" aria-label="聊天记录">${history}</div><form data-task="chat-send" class="qq-compose"><div class="qq-edit-tools"><span>𝑨</span><span>☺</span><span>✂</span><span>▧</span><span>▱</span><span class="qq-history-label">◷ 消息记录</span></div><label class="qq-compose-label" for="bear-chat-input">输入消息</label><textarea id="bear-chat-input" name="message" aria-label="输入消息" maxlength="300" placeholder="${privateChat ? '输入消息…' : '想买胶片？点击群主旁的私聊。'}"></textarea><div class="qq-sendbar">${friend ? '<button type="button" data-action="chat-find">查找群</button>' : !privateChat ? '<button type="button" data-action="chat-talk">私聊群主</button>' : m.selected !== 'real' ? '<button type="button" data-action="chat-secret">发送银行卡和密码</button>' : ''}<button type="button" data-action="chat-contacts">关闭(C)</button><button type="submit" class="qq-send-button">发送(S)</button></div></form></section><aside class="qq-chat-side">${side}</aside></div></div>`;
 }

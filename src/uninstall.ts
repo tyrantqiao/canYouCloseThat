@@ -52,6 +52,7 @@ export class UninstallMission {
   }
   program(id: string) { return this.programs.find(p => p.id === id); }
   get clean() { return !this.programs.some(p => p.installed) && !this.guard && !this.ad && !this.ads.length && !this.jobs.length && !this.restart && !this.recovery && !this.removing; }
+  get sourcesStopped() { return !this.guard && !this.ad && !this.restart && !this.recovery; }
   get complete() { return this.clean && this.previewed; }
   get achievement() { return this.mistakes === 0 ? '卸得干干净净' : ''; }
   get blocked() { return this.clock < this.gate; }
@@ -108,11 +109,11 @@ export class UninstallMission {
     if (action === 'ad-continue' && this.dialog === 'ad') this.modal('system');
     if (action === 'system-confirm' && this.dialog === 'system') {
       this.dialog = null;
-      if (this.process === 'guard') { this.guard = false; this.restart = 0; this.message = '守护服务已结束，程序仍在安装列表中。'; }
+      if (this.process === 'guard') { this.guard = false; this.restart = 0; this.message = '守护服务已结束，不会再拉起消息服务。消息服务若仍运行，还会弹广告；程序仍在安装列表中。'; }
       else {
         const keep = this.recoverOption;
         this.ad = false; this.adClock = 0; this.recovery = keep ? 2000 : 0; this.restart = this.guard ? 2000 : 0;
-        this.message = '消息服务已结束；结束进程不会卸载软件。';
+        this.message = this.guard ? '消息服务已结束，但守护服务还在，2 秒后会重新拉起它。' : '消息服务已结束，守护也已停止；广告不会再生成。已打开的推荐窗口仍需关闭，程序还需要卸载。';
         if (keep) return this.trap('保留自动恢复，消息服务将在 2 秒后重新启动。');
       }
     }
@@ -157,8 +158,8 @@ export class UninstallMission {
   tick(delta: number) {
     this.clock += delta;
     let changed = false;
-    if (this.restart > 0) { this.restart = Math.max(0, this.restart - delta); if (!this.restart && this.guard) { this.ad = true; this.restored = '由守护服务重新启动'; changed = true; } }
-    if (this.recovery > 0) { this.recovery = Math.max(0, this.recovery - delta); if (!this.recovery && (this.program('main')!.installed || this.program('message')!.installed)) { this.ad = true; this.restored = '由保留的自动恢复任务重新启动'; changed = true; } }
+    if (this.restart > 0) { this.restart = Math.max(0, this.restart - delta); if (!this.restart && this.guard) { this.ad = true; this.restored = '由守护服务重新启动'; this.message = '消息服务又出现了：2346Guard.exe 检测到退出后重新启动了它。'; changed = true; } }
+    if (this.recovery > 0) { this.recovery = Math.max(0, this.recovery - delta); if (!this.recovery && (this.program('main')!.installed || this.program('message')!.installed)) { this.ad = true; this.restored = '由保留的自动恢复任务重新启动'; this.message = '消息服务又出现了：上次退出保留了自动恢复任务。'; changed = true; } }
     if (this.ad && !this.dialog) {
       this.adClock += delta;
       if (this.adClock >= 10000) { this.adClock %= 10000; if (this.ads.length < 2) { if (this.ads.some(id => id % 2 === this.nextAd % 2)) this.nextAd++; this.ads.push(this.nextAd++); changed = true; } }
@@ -210,11 +211,11 @@ export function renderUninstall(m: UninstallMission) {
     else if (w.step === 4) body += `${p.residual ? '<p>每日提醒组件仍保留。</p>' : '<p>请返回系统列表确认其他组件。</p>'}${w.id === 'main' ? option('bundle','安装速搜浏览器并设为默认浏览器',w.bundle) + '<p>点击完成后开始下载及自动安装。</p>' : ''}${b('finish','完成')}${b('programs','返回程序列表')}`;
     else if (w.id === 'main') {
       if (w.step === 0) body += `${choice('repair','修复并继续使用',w.repair,true)}${choice('repair','卸载 2346 桌面助手',!w.repair,false)}<p>修复将恢复守护服务及推荐消息。</p>${b('wizard-next','下一步')}`;
-      if (w.step === 1) body += `<h3>是否放弃卸载，继续使用？</h3><p>放弃卸载将保留当前程序。</p>${b('programs','放弃卸载')}${b('wizard-next','继续卸载')}`;
+      if (w.step === 1) body += `<h3>继续卸载 2346？</h3><p>放弃卸载将保留当前程序。</p>${b('programs','放弃卸载')}${b('wizard-next','继续卸载')}`;
       if (w.step === 2) body += `${option('keep','保留消息服务，主程序移除后仍接收推荐',w.keep)}${option('bundle','安装轻装版，替代被卸载的桌面助手',w.bundle)}<p>轻装版与清静版为同一产品，提交后下载并自动安装。</p>${option('settings','保留个人设置（不运行程序）',w.settings)}${b('execute','执行卸载')}${b('wizard-back','上一步')}`;
       body += b('programs','取消');
     } else {
-      if (w.id === 'quiet') body += `<h3>是否取消卸载？</h3>${option('bundle','卸载后下载并自动安装桌面日历',w.bundle)}${b('programs','取消卸载')}`;
+      if (w.id === 'quiet') body += `<h3>卸载清静版</h3>${option('bundle','卸载后下载并自动安装桌面日历',w.bundle)}${b('programs','取消卸载')}`;
       if (w.id === 'search') body += `${choice('full','仅移除快捷方式',!w.full,false)}${choice('full','移除浏览器及后台更新服务',w.full,true)}<p>仅移除快捷方式不会卸载程序。</p>`;
       if (w.id === 'calendar') body += `${option('noReminder','不保留每日提醒',w.noReminder)}<p>未勾选时保留提醒组件。</p>`;
       if (w.id === 'message') body += '<p>请先在任务管理器结束消息服务，再卸载组件。</p>';
@@ -224,9 +225,9 @@ export function renderUninstall(m: UninstallMission) {
   if (m.view === 'downloads') body = `<h2>下载与安装</h2>${m.jobs.map(j => `<section><h3>${m.program(j.id)!.name}</h3><p>来源：${j.source} · ${j.phase === 'download' ? '下载中（完成后自动安装）' : j.phase === 'install' ? '安装中' : '安装已取消，完整安装包已保留'}</p><progress max="2000" value="${j.elapsed}"></progress>${j.phase === 'install' ? b('cancel-install','取消安装，保留包',j.id) : ''}${j.phase === 'package' ? b('install-package','重新打开安装程序',j.id) : ''}${b('cancel-job',j.phase === 'download' ? '取消下载' : '移除安装包及任务',j.id)}</section>`).join('') || '<p>没有下载任务或安装包。</p>'}`;
   if (m.view === 'document') body = `<h2>准考证</h2><p>姓名：小林　考试时间：明天上午 9:00</p><p>A4 纸，黑白打印；打印工具已就绪。</p>${b('preview','打印预览 · 检查电脑清理结果')}${m.complete ? '<p>✓ 打印预览已打开，打印工具可用。</p>' : ''}`;
   let dialog = '';
-  if (m.dialog === 'guard') dialog = `<h2>2346 · 守护服务</h2><p>是否取消结束守护服务？取消结束后，服务将继续运行。</p>${b('dismiss','取消结束')}${b('guard-continue','继续结束')}`;
+  if (m.dialog === 'guard') dialog = `<h2>2346 · 守护服务</h2><p>结束守护服务后，它不再重新启动消息服务。返回则保持运行。</p>${b('dismiss','返回')}${b('guard-continue','继续结束')}`;
   if (m.dialog === 'ad') dialog = `<h2>2346 · 消息服务</h2><p>退出后是否保留自动恢复？保留后，2 秒后重新启动消息服务。</p>${option('recover','保留自动恢复',m.recoverOption)}${b('ad-continue','确认退出')}${b('dismiss','返回')}`;
   if (m.dialog === 'system') dialog = `<h2>任务管理器</h2><p>是否结束选中的 2346${m.process === 'guard' ? 'Guard' : 'Ad'}.exe 进程？未保存的程序数据可能丢失。</p>${b('system-confirm','结束进程')}${b('dismiss','取消')}`;
   if (m.dialog === 'repair') dialog = `<h2>2346 · 修复确认</h2><p>修复将恢复守护服务及推荐消息，是否继续？</p>${b('repair-confirm','确认修复')}${b('dismiss','返回')}`;
-  return `<div class="uninstall-scene"><div class="uninstall-workspace" ${m.dialog ? 'inert' : ''}><div class="uninstall-desktop"><div class="uninstall-shortcuts">${b('document','▤<br>准考证.pdf')}${b('control','▣<br>计算机')}${b('document','▧<br>打印工具')}</div><aside class="uninstall-note"><strong>家里的留言 · 2016/10/11</strong><p>明天打印准考证，把 2346 卸干净，别把打印工具删了。广告关过好几次，任务栏小图标还在。又装进去别的，也一起清掉。</p></aside></div>${body && !m.minimized ? `<section class="uninstall-window"><header><strong>${names[m.view]}</strong><div>${b('minimize','−')}${b('desktop','×')}</div></header><div class="uninstall-body">${body}<p class="uninstall-message" role="status">${m.message}</p></div></section>` : ''}<div class="uninstall-ads">${m.ads.map(id => `<section class="uninstall-ad"><header>2346 · ${id % 2 === 0 ? '推荐设置' : '今日推荐'}${b('ad-close','×',String(id))}</header>${id % 2 === 0 ? `<p>不再接收此类推荐</p>${option('adOption','安装清静版，代替当前助手',m.adOption)}<p>应用后下载并自动安装。</p>${b('ad-apply','应用设置',String(id))}${b('ad-close','仅关闭',String(id))}` : `<p>关闭本次推荐后，不再显示本条内容。其他推荐仍可能出现。</p>${b('ad-close','关闭本条',String(id))}${b('ad-quiet','开启免打扰',String(id))}<p>免打扰：下载并自动安装 2346 清静版。</p>`}<small>由 ${m.program('message')!.installed ? '2346 消息组件' : '2346 桌面助手'}提供</small></section>`).join('')}</div></div><nav class="uninstall-taskbar" aria-label="任务栏" ${m.dialog ? 'inert' : ''}>${b('start','▦ 开始')}${b('restore','恢复窗口','',!m.minimized)}${b('downloads',`下载 (${m.jobs.length})`)}<span>${m.ad || m.guard ? '2346 ●' : '2346 已停止'}</span></nav>${m.startMenu ? `<nav class="uninstall-start" ${m.dialog ? 'inert' : ''}>${b('tools','系统工具')}${m.toolsMenu ? b('tasks','任务管理器') : ''}${b('control','控制面板')}</nav>` : ''}${dialog ? `<div class="uninstall-modal"><section role="dialog" aria-modal="true" aria-label="${m.dialog === 'system' ? '结束进程确认' : '2346 操作确认'}"><header>${b('dismiss','×')}</header>${dialog}</section></div>` : ''}</div>`;
+  return `<div class="uninstall-scene"><div class="uninstall-workspace" ${m.dialog ? 'inert' : ''}><div class="uninstall-desktop"><div class="uninstall-shortcuts">${b('document','▤<br>准考证.pdf')}${b('control','▣<br>计算机')}${b('document','▧<br>打印工具')}</div><aside class="uninstall-note"><strong>家里的留言 · 2016/10/11</strong><p>明天打印准考证，把 2346 卸干净，别把打印工具删了。广告关过好几次，任务栏小图标还在。又装进去别的，也一起清掉。</p><ul class="uninstall-checklist" aria-label="电脑清理状态"><li>${m.sourcesStopped ? '✓' : '○'} 后台来源停止</li><li>${!m.ads.length ? '✓' : '○'} 推荐窗口关闭</li><li>${!m.programs.some(p=>p.installed) && !m.removing ? '✓' : '○'} 程序与组件移除</li><li>${!m.jobs.length ? '✓' : '○'} 下载与安装包清理</li><li>${m.complete ? '✓' : '○'} 准考证打印预览</li></ul></aside></div>${body && !m.minimized ? `<section class="uninstall-window"><header><strong>${names[m.view]}</strong><div>${b('minimize','−')}${b('desktop','×')}</div></header><div class="uninstall-body">${body}<p class="uninstall-message" role="status">${m.message}</p></div></section>` : ''}<div class="uninstall-ads">${m.ads.map(id => `<section class="uninstall-ad"><header>2346 · ${id % 2 === 0 ? '推荐设置' : '今日推荐'}${b('ad-close','×',String(id))}</header>${id % 2 === 0 ? `<p>不再接收此类推荐</p>${option('adOption','安装清静版，代替当前助手',m.adOption)}<p>应用后下载并自动安装。</p>${b('ad-apply','应用设置',String(id))}${b('ad-close','仅关闭',String(id))}` : `<p>关闭本次推荐后，不再显示本条内容。其他推荐仍可能出现。</p>${b('ad-close','关闭本条',String(id))}${b('ad-quiet','开启免打扰',String(id))}<p>免打扰：下载并自动安装 2346 清静版。</p>`}<small>由 ${m.program('message')!.installed ? '2346 消息组件' : '2346 桌面助手'}提供</small></section>`).join('')}</div></div><nav class="uninstall-taskbar" aria-label="任务栏" ${m.dialog ? 'inert' : ''}>${b('start','▦ 开始')}${b('restore','恢复窗口','',!m.minimized)}${b('downloads',`下载 (${m.jobs.length})`)}<span>${m.ad || m.guard ? '2346 ●' : '2346 已停止'}</span></nav>${m.startMenu ? `<nav class="uninstall-start" ${m.dialog ? 'inert' : ''}>${b('tools','系统工具')}${m.toolsMenu ? b('tasks','任务管理器') : ''}${b('control','控制面板')}</nav>` : ''}${dialog ? `<div class="uninstall-modal"><section role="dialog" aria-modal="true" aria-label="${m.dialog === 'system' ? '结束进程确认' : '2346 操作确认'}"><header>${b('dismiss','×')}</header>${dialog}</section></div>` : ''}</div>`;
 }

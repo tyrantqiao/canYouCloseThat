@@ -113,3 +113,24 @@ test('drive search uses shared catalog and exact share numbers only return their
  m.launch('real'); assert.equal(m.download(), false); assert.equal(m.complete, true);
  m.reset(); assert.equal(m.activeApp, ''); assert.equal(m.file, ''); assert.equal(m.complete, false);
  });
+test('chat questions produce contextual replies without switching conversations', () => {
+  const m = new ChatMission(); m.join('real'); m.answer('银盐');
+  m.send('大家好'); assert.equal(m.chatting, false); assert.match(m.replyFor(0)!, /老邮局/);
+  m.talk(); m.send('周末扫街在哪集合？'); assert.match(m.replyFor(0)!, /14:00 老邮局/);
+  m.send('冲洗扫描怎么算？'); assert.match(m.replyFor(1)!, /另计/);
+  m.join('fast'); m.talk(); m.send('周末扫街在哪集合？'); assert.match(m.replyFor(0)!, /还没定/);
+  m.join('real'); m.talk(); assert.match(m.replyFor(0)!, /14:00 老邮局/);
+  m.showFriend('star'); m.send('离线留言'); assert.equal(m.replyFor(0), undefined);
+  m.showFriend('lin'); m.send('<script>周末</script>'); assert.ok(!renderChat(m).includes('<script>'));
+  m.reset(); m.join('real'); m.answer('银盐'); m.talk(); assert.equal(m.replyFor(0), undefined);
+});
+
+test('document previews reveal content without downloading or executing files', () => {
+  const m = new DriveMission(); m.preview('pdf'); assert.equal(m.message, '');
+  m.launch('real'); m.open('real'); m.unlock('xj06'); m.preview('exe');
+  assert.match(m.message, /无法展示/); assert.equal(m.file, ''); assert.equal(m.complete, false);
+  m.preview('pdf'); assert.match(m.message, /第 1 \/ 24 页/); assert.match(m.message, /曝光记录表/);
+  assert.equal(m.page, 'files'); assert.match(renderDrive(m), /data-action="drive-preview"/);
+  m.open('fake'); assert.equal(m.message, ''); m.unlock('xj06'); m.preview('pdf'); assert.match(m.message, /1 页/);
+  m.open('real'); assert.equal(m.message, ''); m.unlock('xj06'); m.choose('pdf'); m.download(); assert.equal(m.complete, true);
+});

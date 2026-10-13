@@ -111,3 +111,12 @@ test('real frame contract freezes all mission events when paused/lost and reset 
   game.retry(); m.reset(); assert.equal(m.jobs.length,0); assert.equal(m.ads.length,2); assert.equal(m.guard,true); assert.equal(m.ad,true);
   assert.equal(m.dialog,null); assert.equal(m.wizard,null); assert.equal(m.program('main')!.installed,true);
 });
+test('checklist navigation locates sources without performing cleanup or bypassing a modal', () => {
+  const m = new UninstallMission();
+  click(m, 'tasks'); assert.match(renderUninstall(m), /清理清单/);
+  click(m, 'programs'); click(m, 'downloads'); click(m, 'document');
+  assert.equal(m.guard, true); assert.equal(m.ad, true); assert.equal(m.program('main')!.installed, true);
+  assert.deepEqual(m.ads, [1, 2]); assert.equal(m.complete, false); assert.equal(m.mistakes, 0);
+  click(m, 'tasks'); click(m, 'end'); const view = m.view;
+  click(m, 'document'); assert.equal(m.view, view); assert.equal(m.dialog, 'guard');
+});

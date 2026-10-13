@@ -130,7 +130,20 @@ test('document previews reveal content without downloading or executing files', 
   m.launch('real'); m.open('real'); m.unlock('xj06'); m.preview('exe');
   assert.match(m.message, /无法展示/); assert.equal(m.file, ''); assert.equal(m.complete, false);
   m.preview('pdf'); assert.match(m.message, /第 1 \/ 24 页/); assert.match(m.message, /曝光记录表/);
-  assert.equal(m.page, 'files'); assert.match(renderDrive(m), /data-action="drive-preview"/);
+  assert.equal(m.page, 'files'); assert.match(renderDrive(m), /data-action="drive-preview-close"/);
   m.open('fake'); assert.equal(m.message, ''); m.unlock('xj06'); m.preview('pdf'); assert.match(m.message, /1 页/);
   m.open('real'); assert.equal(m.message, ''); m.unlock('xj06'); m.choose('pdf'); m.download(); assert.equal(m.complete, true);
+});
+
+test('closing a document preview preserves extraction and changing shares or retry clears it', () => {
+  const m = new DriveMission(); m.launch('real'); m.open('real'); m.unlock('xj06');
+  m.preview('pdf'); assert.equal(m.previewFile, 'pdf');
+  assert.match(renderDrive(m), /曝光记录表（课堂填写）/);
+  assert.ok(!renderDrive(m).includes('data-action="drive-file"'));
+  m.closePreview(); assert.equal(m.previewFile, ''); assert.equal(m.unlocked, true);
+  assert.match(renderDrive(m), /data-action="drive-file"/);
+  m.preview('pdf'); m.open('fake'); assert.equal(m.previewFile, '');
+  m.unlock('xj06'); m.preview('pdf'); assert.match(renderDrive(m), /资源助手使用说明/);
+  assert.ok(!renderDrive(m).includes('曝光记录表（课堂填写）'));
+  m.reset(); assert.equal(m.previewFile, ''); assert.equal(m.unlocked, false);
 });

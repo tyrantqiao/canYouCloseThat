@@ -111,10 +111,10 @@ function overlay(type: string, showRun = type === 'won' && game?.levelIndex === 
   const el = document.querySelector('#overlay')!;
   if (!game) return;
   let content = '';
-  if (type === 'ready') content = `<span class="eyebrow">准备好找回清净了吗？</span><h2>${game.level.name}</h2><p>${game.level.intro}</p><p class="modal-note">${game.level.time && !practice ? `本关限时 ${game.level.time} 秒 · ` : ''}每关 3 格耐心 · 提示与暂停标记为辅助</p><button class="button dark" data-action="begin">开始这一关 →</button>`;
-  if (type === 'paused') content = `<span class="eyebrow">喘口气，广告也暂停了。</span><h2>暂停中</h2><p>计时和游戏操作已冻结。成绩已标记为辅助。</p><button class="button dark" data-action="resume">继续挑战 →</button>`;
+  if (type === 'ready') content = `<span class="eyebrow">准备好找回清净了吗？</span><h2>${game.level.name}</h2><p>${game.level.intro}</p><p class="modal-note">${game.level.time && !practice ? `本关限时 ${game.level.time} 秒 · ` : ''}每关 3 格耐心 · 提示与练习模式标记为辅助；暂停冻结进度</p><button class="button dark" data-action="begin">开始这一关 →</button>`;
+  if (type === 'paused') content = `<span class="eyebrow">喘口气，广告也暂停了。</span><h2>暂停中</h2><p>计时和游戏操作已冻结，休息后继续。暂停不影响成绩资格。</p><button class="button dark" data-action="resume">继续挑战 →</button>`;
   if (type === 'lost') content = `<span class="eyebrow">耐心下线，快乐还在。</span><h2>又被广告留住了。</h2><p>${game.reason}</p><p class="modal-note">死亡 ${game.deaths} 次 · 本次 ${format(game.elapsed)}</p><button class="button dark" data-action="retry">马上重试 ↻</button><button class="button outline" data-action="hint">看看提示</button>`;
-  if (type === 'won') content = `<span class="eyebrow">CLEAN INTERNET, FINALLY.</span><h2>${game.level.id === 40 ? '电脑清理好了！' : game.level.id === 20 ? '验收通过！' : game.level.id === 1 ? '胶片买到了！' : game.level.id === 10 ? '讲义下载完成！' : game.level.id === 4 ? 'Steam 安装成功！' : game.level.id === 30 ? '游戏准备就绪！' : game.levelIndex === levels.length - 1 ? '弹窗毕业生！' : '终于，清净了。'}</h2><p>${game.level.id === 40 ? (uninstall.achievement ? '获得称号：' + uninstall.achievement + '。2346 已卸载，打印工具仍可用。' : '2346 和本次新增程序均已清理，打印工具仍可用。') : game.level.id === 20 ? (mission.achievement ? '恭喜获得称号：' + mission.achievement + '。全程未点击任何弹窗，官网验收成功！' : '域名和发布者都对了，验收通过！') : game.level.id === 4 ? 'Steam 快捷方式已创建。室友发来消息：“客户端装好了！今晚先聊悟空，游戏库慢慢准备。”' : game.level.id === 30 ? '绝地求死已在自己的游戏库，东亚联机测试通过。林林：“语音里听见你了，房间给你留好了，开局！”' : game.level.id === 10 ? '正确的讲义已保存，晚上上课有着落了。' : chat.testedFake ? '假口令识破假收款页！已在阿光的店铺完成胶片订单。' : '阿光给你留好了一卷晨光 200，明天寄出。周六 14:00，带相机和片筒去老邮局见。'}</p><div class="result-stats"><div><strong>${format(game.elapsed)}</strong><span>本关成功用时</span></div><div><strong>${game.mistakes}</strong><span>累计误点</span></div><div><strong>${format(game.total)}</strong><span>本轮总时间</span></div></div><p class="modal-note">${game.assisted ? '辅助通关 · 不计入无辅助最快纪录' : '无辅助通关 · 已更新本地个人纪录'}${storageWarning ? ' · 浏览器禁用了存储，本次纪录仅在内存中保留' : ''}</p><button class="button dark" data-action="next">${game.levelIndex === levels.length - 1 ? '回大厅，再玩一轮' : '下一关 →'}</button><button class="button outline" data-action="retry">再挑战一次</button>`;
+  if (type === 'won') content = `<span class="eyebrow">CLEAN INTERNET, FINALLY.</span><h2>${game.level.id === 40 ? '电脑清理好了！' : game.level.id === 20 ? '验收通过！' : game.level.id === 1 ? '胶片买到了！' : game.level.id === 10 ? '讲义下载完成！' : game.level.id === 4 ? 'Steam 安装成功！' : game.level.id === 30 ? '游戏准备就绪！' : game.levelIndex === levels.length - 1 ? '弹窗毕业生！' : '终于，清净了。'}</h2><p>${game.level.id === 40 ? (uninstall.achievement ? '获得称号：' + uninstall.achievement + '。2346 已卸载，打印工具仍可用。' : '2346 和本次新增程序均已清理，打印工具仍可用。') : game.level.id === 20 ? (mission.achievement ? '恭喜获得称号：' + mission.achievement + (mission.popupClicks === 0 ? '。全程未点击任何弹窗，官网验收成功！' : '。安全关闭不扣分，官网验收成功！') : '域名和发布者都对了，验收通过！') : game.level.id === 4 ? 'Steam 快捷方式已创建。室友发来消息：“客户端装好了！今晚先聊悟空，游戏库慢慢准备。”' : game.level.id === 30 ? '绝地求死已在自己的游戏库，东亚联机测试通过。林林：“语音里听见你了，房间给你留好了，开局！”' : game.level.id === 10 ? '正确的讲义已保存，晚上上课有着落了。' : chat.testedFake ? '已核对群号与店铺来源，在阿光的店铺完成胶片订单。' : '阿光给你留好了一卷晨光 200，明天寄出。周六 14:00，带相机和片筒去老邮局见。'}</p><div class="result-stats"><div><strong>${format(game.elapsed)}</strong><span>本关成功用时</span></div><div><strong>${game.mistakes}</strong><span>累计误点</span></div><div><strong>${format(game.total)}</strong><span>本轮总时间</span></div></div><p class="modal-note">${game.assisted ? '辅助通关 · 不计入无辅助最快纪录' : '无辅助通关 · 已更新本地个人纪录'}${storageWarning ? ' · 浏览器禁用了存储，本次纪录仅在内存中保留' : ''}</p><button class="button dark" data-action="next">${game.levelIndex === levels.length - 1 ? '回大厅，再玩一轮' : '下一关 →'}</button><button class="button outline" data-action="retry">再挑战一次</button>`;
   const result = type === 'won' || type === 'lost';
   if (result) {
     if (type === 'won') runRecord.record(game);
@@ -277,7 +277,7 @@ app.addEventListener('click', event => {
     }
   }
   updateHUD();
-  if (game && game.mistakes > mistakesBefore) damageFeedback();
+  if (game && game.mistakes > mistakesBefore) { if (game.level.id === 20) mission.recordTrap(); damageFeedback(); }
   if (game?.status === 'lost') overlay('lost');
 });
 app.addEventListener('change', event => {
@@ -335,6 +335,9 @@ document.addEventListener('visibilitychange', () => {
   lastTime = performance.now();
 });
 document.addEventListener('keydown', event => {
+  if (event.key === 'Escape' && game?.level.id === 10 && game.status === 'playing' && drive.previewFile && drive.activeApp === 'real' && !drive.minimized) {
+    event.preventDefault(); const file = drive.previewFile; drive.closePreview(); drawScenario(); document.querySelector<HTMLElement>(`[data-action="drive-preview"][data-id="${file}"]`)?.focus(); return;
+  }
   if (game?.level.id === 40 && game.status === 'playing') {
     if (event.key === 'Tab' && uninstall.dialog) {
       const controls = Array.from(document.querySelectorAll<HTMLElement>('.uninstall-modal button,.uninstall-modal input'));
@@ -492,9 +495,21 @@ function drawScenario() {
   document.querySelector('#stage')!.classList.toggle('drive-system-stage', game.level.id === 10);
   document.querySelector('#stage')!.classList.toggle('uninstall-system-stage', game.level.id === 40);
   if (game.level.id === 40) {
+    const oldScene = document.querySelector<HTMLElement>('.uninstall-scene');
+    const sameView = oldScene?.dataset.view === uninstall.view;
+    const workspaceScroll = document.querySelector('.uninstall-workspace')?.scrollTop || 0;
+    const bodyScroll = sameView ? document.querySelector('.uninstall-body')?.scrollTop || 0 : 0;
+    const checklistOpen = document.querySelector<HTMLDetailsElement>('.uninstall-location-panel')?.open || false;
     const focus = document.activeElement as HTMLElement | null;
     const action = focus?.dataset.action; const id = focus?.dataset.id; const opt = focus?.dataset.uninstallOption;
     document.querySelector('.website')!.innerHTML = renderUninstall(uninstall);
+    document.querySelector<HTMLElement>('.uninstall-scene')!.dataset.view = uninstall.view;
+    const workspace = document.querySelector('.uninstall-workspace');
+    const body = document.querySelector('.uninstall-body');
+    if (workspace) workspace.scrollTop = workspaceScroll;
+    if (body) body.scrollTop = bodyScroll;
+    const locations = document.querySelector<HTMLDetailsElement>('.uninstall-location-panel');
+    if (locations) locations.open = checklistOpen;
     if (game.status === 'playing') {
       let appeared = false;
       for (const id of uninstall.ads) {
@@ -530,6 +545,7 @@ function finishScenario() {
 }
 function scenarioTrap(message: string) { game!.trap(message); feedback(message); damageFeedback(); }
 function handleScenarioAction(action: string, target: HTMLElement) {
+  const previewFile = drive.previewFile;
   if (action.startsWith('gaming-')) handleGamingAction(action, target);
   game!.clicks++;
   if (action === 'chat-open') { chat.open(); if (chat.unread && popupSound) ringBearMessage(); }
@@ -557,11 +573,14 @@ function handleScenarioAction(action: string, target: HTMLElement) {
   if (action === 'drive-home') { drive.page = 'search'; drive.message = ''; }
   if (action === 'drive-open') drive.open(target.dataset.id!);
   if (action === 'drive-file') drive.choose(target.dataset.id!);
+  if (action === 'drive-preview-close') drive.closePreview();
   if (action === 'drive-preview') drive.preview(target.dataset.id!);
   if (action === 'drive-files') { drive.page = 'files'; drive.message = ''; }
   if (action === 'drive-fast') { drive.message = '下载了加速器安装包，讲义还没有保存。可改用普通下载。'; scenarioTrap('高速按钮下载的是客户端，还附带桌面导航。耐心 −1。'); }
   if (action === 'drive-save' && drive.download()) scenarioTrap('下载的是安装程序，核对分享来源和完整文件类型。耐心 −1。');
   drawScenario(); finishScenario();
+  if (action === 'drive-preview') document.querySelector<HTMLElement>('[data-action="drive-preview-close"]')?.focus();
+  if (action === 'drive-preview-close') document.querySelector<HTMLElement>(`[data-action="drive-preview"][data-id="${previewFile}"]`)?.focus();
 }
 app.addEventListener('submit', event => {
   const form = event.target;
@@ -611,6 +630,8 @@ app.addEventListener('change', event => {
   if (input.dataset.uninstallOption && game?.level.id === 40 && game.status === 'playing') { uninstall.setOption(input.dataset.uninstallOption, input.type === 'radio' ? input.value === 'true' : input.checked); return; }
   if (input.name === 'route' && game?.level.id === 30 && game.status === 'playing') {
     gaming.selectRoute(input.value);
+    const diagnostics = document.querySelector('#route-diagnostics');
+    if (diagnostics) diagnostics.replaceChildren();
     const join = document.querySelector<HTMLButtonElement>('[data-action="gaming-join-voice"]');
     if (join) join.disabled = !gaming.routeReady;
     const message = document.querySelector<HTMLElement>('.gaming-app .task-message');

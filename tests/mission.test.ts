@@ -30,12 +30,12 @@ test('new query resets pagination and old results cannot be opened; blank input 
   assert.equal(mission.page, 'official');
 });
 
-test('official is only on second page; promotion and games can be browsed without attack', () => {
-  assert.ok(searchResults.filter(site => site.page === 1).length >= 8);
+test('official remains on second page; fewer distinct distractions can be browsed freely', () => {
+  assert.equal(searchResults.filter(site => site.page === 1).length, 5);
   assert.ok(!searchResults.some(site => site.page === 1 && site.kind === 'official'));
   const mission = new BrowserMission(); mission.search('星河浏览器');
   mission.visitResult('official'); assert.equal(mission.page, 'results');
-  for (const id of ['download', 'vip', 'game', 'typo', 'paid']) {
+  for (const id of ['download', 'vip', 'typo']) {
     assert.equal(mission.visitResult(id), false);
     assert.equal(mission.tickDanger(10000), 0);
     mission.back(); assert.equal(mission.resultsPage, 1);
@@ -157,8 +157,9 @@ test('untouched popup achievement requires acceptance and resets for each attemp
   assert.equal(mission.achievement, '万花丛中过，片叶不沾身');
   mission.recordPopupClick();
   assert.equal(mission.complete, true);
-  assert.equal(mission.achievement, null);
+  assert.equal(mission.achievement, '看清再点，安全上网');
+  mission.recordTrap(); assert.equal(mission.achievement, null);
   mission.reset();
-  assert.equal(mission.popupClicks, 0);
+  assert.equal(mission.popupClicks, 0); assert.equal(mission.trapCount, 0);
   assert.equal(mission.achievement, null);
 });

@@ -29,7 +29,7 @@ test('failed attempts and replayed wins replace one entry while retaining time a
   game.tick(1000); for (let i = 0; i < 3; i++) game.trap('误点'); run.record(game);
   assert.equal(run.summary, null); game.retry(false); game.tick(500); win(game); run.record(game);
   const snapshot = run.summary!;
-  game.retry(); game.pause(); game.resume(); game.tick(200); win(game); run.record(game);
+  game.retry(); game.pause(); game.resume(); game.hint(); game.tick(200); win(game); run.record(game);
   assert.equal(snapshot.time, 2300); assert.equal(run.summary!.time, 3300);
   assert.equal(run.summary!.entries.length, 1); assert.equal(run.summary!.mistakes, 3);
   assert.equal(run.summary!.deaths, 1); assert.equal(run.summary!.retries, 1); assert.equal(run.summary!.assisted, true);

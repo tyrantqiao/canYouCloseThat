@@ -7,7 +7,9 @@ test('clean state must last 800ms and pause freezes both clocks', () => {
   game.tick(400); assert.equal(game.status, 'clearing');
   game.pause(); game.tick(10000); assert.equal(game.elapsed, 1400);
   game.resume(); game.tick(400); assert.equal(game.status, 'won');
-  assert.equal(game.assisted, true);
+  assert.equal(game.assisted, false);
+  game.hint(); game.pause(); game.resume(); assert.equal(game.assisted, true);
+  const practice = new GameSession(1, true); practice.start(); practice.pause(); practice.resume(); assert.equal(practice.assisted, true);
 });
 test('death resets the attempt but retains total time and statistics', () => {
   const game = new GameSession(1); game.start(); game.tick(2000);

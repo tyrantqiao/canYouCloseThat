@@ -5,7 +5,7 @@ import { createResultCard, renderResultCard, resultCardFilename } from '../src/s
 
 test('result snapshots survive retries and keep cumulative metrics and assisted status honest', () => {
   const game = new GameSession(3); game.start(); game.tick(1200); game.trap('误点');
-  game.retry(); game.tick(500); game.pause(); game.resume();
+  game.retry(); game.tick(500); game.pause(); game.resume(); game.hint();
   const card = createResultCard(game, true);
   game.retry(); game.tick(9000);
   assert.equal(card.level, 4); assert.equal(card.elapsed, '0.5s'); assert.equal(card.total, '1.7s');

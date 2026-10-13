@@ -151,3 +151,16 @@ test('route testing can be cancelled and cannot be changed while running', () =>
   m.openAccelerator(); m.selectRoute('unknown'); assert.equal(m.route, 'east');
   m.testRoute(); m.tick(500); m.reset(); m.tick(5000); assert.equal(m.complete, false); assert.equal(m.routeReady, false);
 });
+test('route diagnostics distinguish service from region and cannot survive a change or retry', () => {
+  const m = new GamingMission('purchase');
+  m.purchased = true; m.accelerated = true; m.openLibrary(); m.openAccelerator();
+  m.selectRoute('shop'); m.testRoute(); assert.equal(m.routeReport, null); m.tick(1500);
+  assert.equal(m.routeReport?.multiplayer, false); assert.equal(m.routeReport?.sameRegion, true);
+  assert.equal(m.routeReady, false); assert.match(renderGaming(m), /仅支持商店网页/);
+  m.selectRoute('west'); assert.equal(m.routeReport, null); m.testRoute(); m.tick(1500);
+  assert.equal(m.routeReport?.multiplayer, true); assert.equal(m.routeReport?.sameRegion, false);
+  m.selectRoute('east'); m.testRoute(); m.back(); assert.equal(m.routeReport, null);
+  m.openAccelerator(); m.testRoute(); m.tick(1500); assert.equal(m.routeReady, true);
+  assert.match(renderGaming(m), /联机连接已建立/);
+  m.reset(); assert.equal(m.routeReport, null); assert.equal(m.testedRoute, '');
+});

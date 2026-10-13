@@ -65,7 +65,7 @@ export class GameSession {
     if (this.remaining === 0) { this.status = 'clearing'; this.clearElapsed = 0; }
   }
   fail(reason: string) { this.status = 'lost'; this.reason = reason; this.deaths++; }
-  pause() { if (this.status === 'playing' || this.status === 'clearing') { this.resumeStatus = this.status; this.status = 'paused'; this.assisted = true; } }
+  pause() { if (this.status === 'playing' || this.status === 'clearing') { this.resumeStatus = this.status; this.status = 'paused'; } }
   private resumeStatus: Status = 'playing';
   resume() { if (this.status === 'paused') this.status = this.resumeStatus; }
   hint() { this.hintCount = Math.min(2, this.hintCount + 1); this.assisted = true; return this.level.hints[this.hintCount - 1]; }

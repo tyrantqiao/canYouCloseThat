@@ -6,8 +6,13 @@ export class BrowserMission {
   ads: string[] = [];
   verified = false;
   popupClicks = 0;
+  trapCount = 0;
   recordPopupClick() { this.popupClicks++; }
-  get achievement() { return this.complete && this.popupClicks === 0 ? '万花丛中过，片叶不沾身' : null; }
+  recordTrap() { this.trapCount++; }
+  get achievement() {
+    if (!this.complete || this.trapCount) return null;
+    return this.popupClicks === 0 ? '万花丛中过，片叶不沾身' : '看清再点，安全上网';
+  }
   opened = false;
   searched = false;
   wave = 0;
@@ -44,7 +49,7 @@ export class BrowserMission {
   downloadElapsed = 0;
   pluginsDownloaded = false;
   plugins = new Set(['navigation', 'toolbar', 'assistant']);
-  reset() { this.popupClicks = 0; this.page = 'desktop'; this.query = ''; this.ads = []; this.verified = false; this.opened = false; this.searched = false; this.wave = 0; this.bundleChecked = true; this.installed = false; this.cancelPending = false; this.downloadElapsed = 0; this.pluginsDownloaded = false; this.plugins = new Set(['navigation', 'toolbar', 'assistant']); this.resultsPage = 1; this.selectedSite = null; this.dangerActive = false; this.dangerElapsed = 0; }
+  reset() { this.trapCount = 0; this.popupClicks = 0; this.page = 'desktop'; this.query = ''; this.ads = []; this.verified = false; this.opened = false; this.searched = false; this.wave = 0; this.bundleChecked = true; this.installed = false; this.cancelPending = false; this.downloadElapsed = 0; this.pluginsDownloaded = false; this.plugins = new Set(['navigation', 'toolbar', 'assistant']); this.resultsPage = 1; this.selectedSite = null; this.dangerActive = false; this.dangerElapsed = 0; }
   cancelInstaller() {
     if (!this.visibleAds.includes('toolbar') && !this.visibleAds.includes('setup')) return;
     this.cancelPending = true;

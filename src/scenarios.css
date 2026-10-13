@@ -44,3 +44,11 @@
 .gaming-xdu .search-result small{color:#a8afb5;font-size:10px}
 .chat-topics{display:flex;flex-wrap:wrap;gap:4px;margin-top:12px}.chat-topics button{font-size:12px!important;padding:6px 10px!important}
 .route-choice{display:flex!important;align-items:center;gap:12px;padding:12px;border:1px solid #bbcbd8;background:#f7fbff;overflow-wrap:anywhere}.scenario-app .route-choice input{display:inline-block;width:22px;min-height:22px;margin:0;flex:0 0 22px}.route-choice:has(input:checked){border-color:#3672ab;background:#e8f3ff}.gaming-app fieldset{min-width:0;border:0;padding:0}.gaming-app legend{font-weight:bold;margin-bottom:12px}
+.drive-preview header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.drive-paper{max-width:560px;margin:0 auto;padding:24px;background:#fff;border:1px solid #ccd6dd;box-shadow:0 3px 10px #1b3b5120;color:#243746}
+.drive-paper h2{font-size:22px!important}.drive-paper h3{font-size:16px}.drive-paper small{display:block;text-align:right;color:#667b8b}
+.drive-paper table{width:100%;border-collapse:collapse;margin:18px 0}.drive-paper caption{text-align:left;margin-bottom:6px}.drive-paper th,.drive-paper td{border:1px solid #b8c8d4;padding:8px;text-align:left}
+.drive-paper .drive-print-note{margin-top:24px;border-top:1px solid #ccd6dd;padding-top:12px;font-size:13px;color:#586c7a}
+.drive-preview-unavailable{padding:20px;background:#fff8df;border:1px solid #ddcea5}
+.route-report{border:1px solid #adc4d4;background:#f3f8fb;padding:14px;margin:16px 0}.route-report h3{margin-top:0}.route-report dl{margin:10px 0}.route-report dl>div{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid #d5e1e8}.route-report dd{margin:0;text-align:right}
+@media(max-width:600px){.drive-paper{padding:14px}.drive-paper th,.drive-paper td{padding:5px}.route-report dl>div{flex-direction:column;gap:3px}.route-report dd{text-align:left}}

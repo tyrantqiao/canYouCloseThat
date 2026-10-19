@@ -10,7 +10,7 @@ test('result snapshots survive retries and keep cumulative metrics and assisted 
   game.retry(); game.tick(9000);
   assert.equal(card.level, 4); assert.equal(card.elapsed, '0.5s'); assert.equal(card.total, '1.7s');
   assert.equal(card.mistakes, 1); assert.equal(card.retries, 1); assert.equal(card.mode, '使用辅助');
-  assert.equal(card.headline, '踩过坑，也过了关。'); assert.ok(Object.isFrozen(card));
+  assert.equal(card.headline, '下载器迷宫逃生员'); assert.ok(Object.isFrozen(card));
   assert.match(renderResultCard(card), /本轮累计误点/);
 });
 

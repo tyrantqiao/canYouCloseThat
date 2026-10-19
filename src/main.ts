@@ -5,6 +5,7 @@ import './viewport.css';
 import './results.css';
 import { createResultCard, createRunCard, renderResultCard, resultCardBlob, resultCardFilename } from './share-card';
 import { RunRecord } from './run-record';
+import { TitleTrail } from './titles';
 import type { ResultCard } from './share-card';
 import './share-card.css';
 import { ringPopupBell, ringBearMessage } from './sound';
@@ -33,6 +34,10 @@ let toastTimer: ReturnType<typeof setTimeout>;
 let lastTime = performance.now();
 let recorded = false;
 const runRecord = new RunRecord();
+const titleTrail = new TitleTrail();
+const titleMissions = { browser: mission, chat, drive, steam, gaming, uninstall };
+let titleHudKey = '';
+function observeTitles() { if (game) titleTrail.observe(game, titleMissions); }
 let practice = false;
 let escapeSide = false;
 let drag: { element: HTMLElement; x: number; y: number; left: number; top: number; scale: number } | null = null;
@@ -73,6 +78,7 @@ function drawWindows() {
 function play(index: number, continueRun = false) {
   if (!continueRun) runRecord.start(index);
   game = new GameSession(index, practice); recorded = false; lastTime = performance.now();
+  titleTrail.start(game); titleHudKey = '';
   announcedAds.clear();
   document.body.classList.add('in-game');
   mission.reset(); chat.reset(); drive.reset(); steam.reset(); gaming.reset(); uninstall.reset();
@@ -117,9 +123,11 @@ function overlay(type: string, showRun = type === 'won' && game?.levelIndex === 
   if (type === 'won') content = `<span class="eyebrow">CLEAN INTERNET, FINALLY.</span><h2>${game.level.id === 40 ? '电脑清理好了！' : game.level.id === 20 ? '验收通过！' : game.level.id === 1 ? '胶片买到了！' : game.level.id === 10 ? '讲义下载完成！' : game.level.id === 4 ? 'Steam 安装成功！' : game.level.id === 30 ? '游戏准备就绪！' : game.levelIndex === levels.length - 1 ? '弹窗毕业生！' : '终于，清净了。'}</h2><p>${game.level.id === 40 ? (uninstall.achievement ? '获得称号：' + uninstall.achievement + '。2346 已卸载，打印工具仍可用。' : '2346 和本次新增程序均已清理，打印工具仍可用。') : game.level.id === 20 ? (mission.achievement ? '恭喜获得称号：' + mission.achievement + (mission.popupClicks === 0 ? '。全程未点击任何弹窗，官网验收成功！' : '。安全关闭不扣分，官网验收成功！') : '域名和发布者都对了，验收通过！') : game.level.id === 4 ? 'Steam 快捷方式已创建。室友发来消息：“客户端装好了！今晚先聊悟空，游戏库慢慢准备。”' : game.level.id === 30 ? '绝地求死已在自己的游戏库，东亚联机测试通过。林林：“语音里听见你了，房间给你留好了，开局！”' : game.level.id === 10 ? '正确的讲义已保存，晚上上课有着落了。' : chat.testedFake ? '已核对群号与店铺来源，在阿光的店铺完成胶片订单。' : '阿光给你留好了一卷晨光 200，明天寄出。周六 14:00，带相机和片筒去老邮局见。'}</p><div class="result-stats"><div><strong>${format(game.elapsed)}</strong><span>本关成功用时</span></div><div><strong>${game.mistakes}</strong><span>累计误点</span></div><div><strong>${format(game.total)}</strong><span>本轮总时间</span></div></div><p class="modal-note">${game.assisted ? '辅助通关 · 不计入无辅助最快纪录' : '无辅助通关 · 已更新本地个人纪录'}${storageWarning ? ' · 浏览器禁用了存储，本次纪录仅在内存中保留' : ''}</p><button class="button dark" data-action="next">${game.levelIndex === levels.length - 1 ? '回大厅，再玩一轮' : '下一关 →'}</button><button class="button outline" data-action="retry">再挑战一次</button>`;
   const result = type === 'won' || type === 'lost';
   if (result) {
-    if (type === 'won') runRecord.record(game);
+    observeTitles();
+    const singleCard = createResultCard(game, type === 'won', (game.level.id === 40 ? uninstall.achievement : game.level.id === 20 ? mission.achievement : '') || '', titleTrail.snapshot(game, type === 'won'));
+    if (type === 'won') runRecord.record(game, singleCard.headline);
     const summary = type === 'won' && showRun ? runRecord.summary : null;
-    activeResultCard = summary ? createRunCard(summary) : createResultCard(game, type === 'won', (game.level.id === 40 ? uninstall.achievement : game.level.id === 20 ? mission.achievement : '') || '');
+    activeResultCard = summary ? createRunCard(summary) : singleCard;
     content = content.replace(/^<span class="eyebrow">[\s\S]*?<\/h2>/, '').replace(/<div class="result-stats">[\s\S]*?<\/div><\/div>/, '');
     content = renderResultCard(activeResultCard) + (type === 'won' ? `<button class="button outline result-card-toggle" data-action="${summary ? 'single-result' : 'run-result'}">${summary ? '查看单关战绩' : '查看本轮总战绩'}</button>` : '') + '<div class="result-share-actions"><button class="button dark" data-action="export-result">保存战绩图片</button><button class="button outline" data-action="preview-result">预览 / 长按保存</button></div><p class="result-export-status" role="status" aria-live="polite">导出高清 PNG，可发给朋友挑战。</p><div class="result-image-preview" hidden></div><div class="result-original">' + content + '</div>';
   }
@@ -167,6 +175,15 @@ function toast(message: string) {
 }
 function updateHUD() {
   if (!game) return;
+  observeTitles();
+  const title = titleTrail.snapshot(game);
+  const titleKey = `${title.headline}|${title.steps.length}|${title.progress}`;
+  if (titleKey !== titleHudKey) {
+    titleHudKey = titleKey;
+    let panel = document.querySelector<HTMLElement>('#title-trail');
+    if (!panel) { panel = document.createElement('details'); panel.id = 'title-trail'; panel.className = 'title-trail'; document.querySelector('#game-details')!.append(panel); }
+    panel.innerHTML = `<summary>当前称号 · ${escapeHTML(title.headline)}</summary><p>${escapeHTML(title.story)}</p><small>${escapeHTML(title.progress)}</small>${title.steps.length ? `<ol>${title.steps.map(s => `<li><b>${escapeHTML(s.title)}</b><small>${escapeHTML(s.evidence)}</small></li>`).join('')}</ol>` : ''}`;
+  }
   document.querySelector('#stage')!.setAttribute('data-health', String(game.patience));
   document.querySelector('#patience')!.textContent = '♥ '.repeat(game.patience) + '♡ '.repeat(3 - game.patience);
   document.querySelector('#timer')!.textContent = format(game.level.time && !practice ? Math.max(0, game.level.time * 1000 - game.elapsed) : game.elapsed);
@@ -199,6 +216,7 @@ app.addEventListener('click', event => {
     return;
   }
   if (action === 'retry') announcedAds.clear();
+  if (action === 'retry') { titleTrail.retry(); titleHudKey = ''; }
   if (action === 'toggle-hud') {
     hudCollapsed = !hudCollapsed;
     document.querySelector('.game-layout')!.classList.toggle('hud-collapsed', hudCollapsed);
@@ -222,7 +240,7 @@ app.addEventListener('click', event => {
     const previous = game;
     play(previous.levelIndex + 1, true);
     game!.total = previous.total; game!.mistakes = previous.mistakes; game!.deaths = previous.deaths;
-    game!.retries = previous.retries; game!.assisted = previous.assisted; updateHUD();
+    game!.retries = previous.retries; game!.assisted = previous.assisted; titleTrail.start(game!); updateHUD();
   }
   if (game?.status === 'playing') {
     if (game.level.id === 40 && action?.startsWith('uninstall-')) {
@@ -387,6 +405,7 @@ function checkMission() {
   if (game?.status === 'playing' && mission.complete) { game.close('main'); feedback('官网验收成功，任务完成！'); }
 }
 function drawMissionPage() {
+  observeTitles();
   const stage = document.querySelector('#stage')!;
   stage.classList.add('retro-stage');
   const website = document.querySelector<HTMLElement>('.website')!;
@@ -490,6 +509,7 @@ new MutationObserver(() => {
 
 
 function drawScenario() {
+  observeTitles();
   if (!game) return;
   document.querySelector('#stage')!.classList.add('scenario-stage');
   document.querySelector('#stage')!.classList.toggle('drive-system-stage', game.level.id === 10);

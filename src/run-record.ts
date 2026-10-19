@@ -4,6 +4,7 @@ import type { GameSession } from './game.ts';
 export interface LevelRecord {
   level: number; name: string; time: number; mistakes: number;
   deaths: number; retries: number; assisted: boolean;
+  title?: string;
 }
 interface Totals { time: number; mistakes: number; deaths: number; retries: number; }
 export interface RunSummary extends Totals {
@@ -14,7 +15,7 @@ export class RunRecord {
   private startIndex = 0;
   private records = new Map<number, { entry: LevelRecord; totals: Totals }>();
   start(index: number) { this.startIndex = index; this.records.clear(); }
-  record(game: GameSession) {
+  record(game: GameSession, title?: string) {
     if (game.status !== 'won') return;
     const previous = this.records.get(game.levelIndex - 1);
     if (game.levelIndex !== this.startIndex && !previous) return;
@@ -25,6 +26,7 @@ export class RunRecord {
       level: game.levelIndex + 1, name: game.level.name, time: totals.time - baseline.time,
       mistakes: totals.mistakes - baseline.mistakes, deaths: totals.deaths - baseline.deaths,
       retries: totals.retries - baseline.retries, assisted: game.assisted,
+      title,
     }) });
   }
   get summary(): RunSummary | null {
